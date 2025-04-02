@@ -4,6 +4,7 @@ import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from '@hapi/joi';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import * as Joi from '@hapi/joi';
         JWT_EXPIRATION_TIME: Joi.string().required(),
       }),
     }),
+    ScheduleModule.forRoot(),
   ],
 })
 export class AppModule {}

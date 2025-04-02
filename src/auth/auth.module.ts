@@ -7,6 +7,8 @@ import { LocalStrategy } from './local.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthCode } from './auth-code.entity';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { PassportModule } from '@nestjs/passport';
         },
       }),
     }),
+    TypeOrmModule.forFeature([AuthCode]),
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],

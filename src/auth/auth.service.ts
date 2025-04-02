@@ -6,10 +6,17 @@ import * as bcrypt from 'bcrypt';
 import { PostgresErrorCodes } from 'src/database/postgresErrorCodes.enum';
 import { TokenPayload } from './token-payload.interface';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { AuthCode } from './auth-code.entity';
+import { LessThan, Repository } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 interface PostgresError extends Error {
   code?: string;
 }
+
+const AUTH_CODE_EXPIRATION = 5 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -17,6 +24,8 @@ export class AuthService {
     private configService: ConfigService,
     private usersService: UsersService,
     private jwtService: JwtService,
+    @InjectRepository(AuthCode)
+    private readonly authCodesRepository: Repository<AuthCode>,
   ) {}
 
   public async register(dto: RegisterRequestDto) {
@@ -44,14 +53,18 @@ export class AuthService {
     );
   }
 
-  public async getAuthenticatedUther(email: string, plainTextPassword: string) {
+  public async getAuthenticatedUther(
+    email: string,
+    plainTextPassword: string,
+    clientId: string,
+  ) {
     try {
-      const user = await this.usersService.getByEmail(email);
+      const user = await this.usersService.getByEmailAndClient(email, clientId);
       await this.verifyPassword(plainTextPassword, user.password);
       return { ...user, password: undefined };
     } catch {
       throw new HttpException(
-        'Wrong credentials provided',
+        'Wrong credentials or client mismatch',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -74,14 +87,75 @@ export class AuthService {
     }
   }
 
-  public getCookieWithJwtToken(userId: number) {
+  public getCookieForLogOut() {
+    return 'Authentication=; HttpOnly; Path=/; Max-Age=0';
+  }
+
+  public async createAuthCode(
+    userId: number,
+    clientId: string,
+    redirectUri: string,
+  ) {
+    const code = this.generateAuthCode();
+    const authCode = this.authCodesRepository.create({
+      userId,
+      code,
+      clientId,
+      redirectUri,
+      expiresAt: new Date(Date.now() + AUTH_CODE_EXPIRATION), // 5 minutes expiration
+    });
+
+    await this.authCodesRepository.save(authCode);
+    return code;
+  }
+
+  public async exchangeAuthCodeForToken({
+    authCode,
+    clientId,
+    redirectUri,
+  }: {
+    authCode: string;
+    clientId: string;
+    redirectUri: string;
+  }) {
+    const authCodeEntity = await this.authCodesRepository.findOne({
+      where: { code: authCode, clientId, redirectUri },
+    });
+
+    if (!authCodeEntity) {
+      throw new HttpException('Invalid auth code', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (authCodeEntity.expiresAt < new Date()) {
+      throw new HttpException('Auth code expired', HttpStatus.UNAUTHORIZED);
+    }
+
+    // It should be a one-time use code, delete after use
+    await this.authCodesRepository.delete({
+      code: authCode,
+      clientId,
+      redirectUri,
+    });
+
+    return this.getCookieWithJwtToken(authCodeEntity.userId);
+  }
+
+  @Cron(CronExpression.EVERY_12_HOURS)
+  private async cleanUpExpiredAuthCodes() {
+    await this.authCodesRepository.delete({
+      expiresAt: LessThan(new Date()),
+    });
+    console.log('Expired auth codes cleaned up');
+  }
+
+  private getCookieWithJwtToken(userId: number) {
     const payload: TokenPayload = { userId };
     const token = this.jwtService.sign(payload);
 
     return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}`;
   }
 
-  public getCookieForLogOut() {
-    return 'Authentication=; HttpOnly; Path=/; Max-Age=0';
+  private generateAuthCode(): string {
+    return crypto.randomBytes(20).toString('hex');
   }
 }
