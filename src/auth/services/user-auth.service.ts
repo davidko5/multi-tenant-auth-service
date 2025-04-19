@@ -1,16 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import RegisterRequestDto from './dto/register-request.dto';
+import UserRegisterRequestDto from '../dto/user-register-request.dto';
 import * as bcrypt from 'bcrypt';
 import { PostgresErrorCodes } from 'src/database/postgresErrorCodes.enum';
-import { TokenPayload } from './token-payload.interface';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthCode } from './auth-code.entity';
+import { AuthCode } from '../auth-code.entity';
 import { LessThan, Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { UserTokenPayload } from '../types/user-token-payload.interface';
 
 interface PostgresError extends Error {
   code?: string;
@@ -19,7 +19,7 @@ interface PostgresError extends Error {
 const AUTH_CODE_EXPIRATION = 5 * 60 * 1000;
 
 @Injectable()
-export class AuthService {
+export class UserAuthService {
   constructor(
     private configService: ConfigService,
     private usersService: UsersService,
@@ -28,13 +28,14 @@ export class AuthService {
     private readonly authCodesRepository: Repository<AuthCode>,
   ) {}
 
-  public async register(dto: RegisterRequestDto) {
+  public async register(dto: UserRegisterRequestDto) {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     try {
       const createdUser = await this.usersService.create({
         ...dto,
         password: hashedPassword,
+        createdAt: new Date(),
       });
       return { ...createdUser, password: undefined };
     } catch (error) {
@@ -53,7 +54,7 @@ export class AuthService {
     );
   }
 
-  public async getAuthenticatedUther(
+  public async getAuthenticatedUser(
     email: string,
     plainTextPassword: string,
     clientId: string,
@@ -149,7 +150,7 @@ export class AuthService {
   }
 
   private getCookieWithJwtToken(userId: number) {
-    const payload: TokenPayload = { userId };
+    const payload: UserTokenPayload = { userId };
     const token = this.jwtService.sign(payload);
 
     return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}`;

@@ -3,29 +3,28 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
-  Unique,
 } from 'typeorm';
 
 @Entity()
-@Unique(['email', 'clientId'])
-class User {
+class Client {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  name: string;
-
-  @Column()
-  clientId: string;
-
-  @Column()
+  @Column({ unique: true })
   email: string;
 
   @Column()
   password: string;
 
+  @Column({ unique: true })
+  appId: string;
+
+  // Whitelist of trusted redirect URIs
+  @Column('simple-array')
+  redirectUris: string[];
+
   @CreateDateColumn()
   createdAt: Date;
 }
 
-export default User;
+export default Client;

@@ -2,15 +2,18 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
-import { UsersService } from 'src/users/users.service';
 import { ConfigService } from '@nestjs/config';
-import { TokenPayload } from './token-payload.interface';
+import { ClientTokenPayload } from '../types/client-token-payload.interface';
+import { ClientsService } from 'src/clients/clients.service';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class ClientJwtStrategy extends PassportStrategy(
+  Strategy,
+  'client-jwt',
+) {
   constructor(
     private readonly configService: ConfigService,
-    private readonly usersService: UsersService,
+    private readonly clientsService: ClientsService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -22,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: TokenPayload) {
-    return this.usersService.getById(payload.userId);
+  validate(payload: ClientTokenPayload) {
+    return this.clientsService.getById(payload.clientId);
   }
 }

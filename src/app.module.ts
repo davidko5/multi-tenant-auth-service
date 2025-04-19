@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from '@hapi/joi';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ClientsModule } from './clients/clients.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       }),
     }),
     ScheduleModule.forRoot(),
+    ClientsModule,
   ],
 })
 export class AppModule {}

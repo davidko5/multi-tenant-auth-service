@@ -1,18 +1,23 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { UserAuthController } from './controllers/user-auth.controller';
+import { UserAuthService } from './services/user-auth.service';
 import { UsersModule } from 'src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
-import { LocalStrategy } from './local.strategy';
-import { JwtStrategy } from './jwt.strategy';
+import { ClientLocalStrategy } from './strategies/client-local.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthCode } from './auth-code.entity';
-
+import { ClientAuthController } from './controllers/client-auth.controller';
+import { ClientAuthService } from './services/client-auth.service';
+import { ClientsModule } from 'src/clients/clients.module';
+import { UserJwtStrategy } from './strategies/user-jwt.strategy';
+import { UserLocalStrategy } from './strategies/user-local.strategy';
+import { ClientJwtStrategy } from './strategies/client-jwt.strategy';
 @Module({
   imports: [
     UsersModule,
+    ClientsModule,
     ConfigModule,
     PassportModule,
     JwtModule.registerAsync({
@@ -27,7 +32,14 @@ import { AuthCode } from './auth-code.entity';
     }),
     TypeOrmModule.forFeature([AuthCode]),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  controllers: [UserAuthController, ClientAuthController],
+  providers: [
+    UserAuthService,
+    ClientAuthService,
+    ClientLocalStrategy,
+    UserLocalStrategy,
+    UserJwtStrategy,
+    ClientJwtStrategy,
+  ],
 })
 export class AuthModule {}
