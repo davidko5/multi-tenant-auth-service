@@ -1,7 +1,9 @@
+import User from 'src/users/user.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -25,6 +27,9 @@ class Client {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => User, (user) => user.client)
+  users: User[];
 }
 
 export default Client;

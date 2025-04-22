@@ -19,7 +19,7 @@ import UserLoginRequestDto from '../dto/user-login-request.dto';
 import UserTokenExchangeRequestDto from '../dto/user-token-exchange-request.dto';
 import RequestWithUser from '../types/request-with-user.interface';
 
-@Controller('auth')
+@Controller('user-auth')
 export class UserAuthController {
   constructor(private userAuthService: UserAuthService) {}
 
@@ -36,7 +36,7 @@ export class UserAuthController {
 
     return this.userAuthService.createAuthCode(
       user.id,
-      dto.clientId,
+      dto.appId,
       dto.redirectUri,
     );
   }

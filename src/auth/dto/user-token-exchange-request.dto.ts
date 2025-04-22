@@ -1,6 +1,16 @@
+import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
+
 class UserTokenExchangeRequestDto {
+  @IsNotEmpty()
+  @IsString()
   authCode: string;
-  clientId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  appId: string;
+
+  @IsNotEmpty()
+  @IsUrl()
   redirectUri: string;
 }
 

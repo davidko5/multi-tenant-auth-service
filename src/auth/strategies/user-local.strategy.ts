@@ -19,7 +19,12 @@ export class UserLocalStrategy extends PassportStrategy(
   }
 
   validate(req: Request, email: string, password: string) {
-    const { clientId } = req.body as UserLoginRequestDto;
-    return this.userAuthService.getAuthenticatedUser(email, password, clientId);
+    const { appId, redirectUri } = req.body as UserLoginRequestDto;
+    return this.userAuthService.getAuthenticatedUser(
+      email,
+      password,
+      appId,
+      redirectUri,
+    );
   }
 }

@@ -15,7 +15,7 @@ export class AuthCode {
   redirectUri: string;
 
   @Column()
-  clientId: string;
+  appId: string;
 
   @Column()
   expiresAt: Date;

@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import User from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { filterUndefined } from 'src/common/utils/filter-undefined';
 
 @Injectable()
 export class UsersService {
@@ -19,9 +20,9 @@ export class UsersService {
     throw new HttpException('User not found', HttpStatus.NOT_FOUND);
   }
 
-  async getByEmailAndClient(email: string, clientId: string): Promise<User> {
+  async getByEmailAndApp(email: string, appId: string): Promise<User> {
     const user = await this.usersRepository.findOne({
-      where: { email, clientId },
+      where: { email, client: { appId } },
     });
     if (user) {
       return user;
@@ -34,5 +35,21 @@ export class UsersService {
     const newUser = this.usersRepository.create(user);
     await this.usersRepository.save(newUser);
     return newUser;
+  }
+
+  async update(params: { id: number; updatedName?: string }): Promise<User> {
+    const user = await this.getById(params.id);
+    if (user) {
+      const updates = filterUndefined({
+        name: params.updatedName,
+      });
+
+      return this.usersRepository.save({
+        ...user,
+        ...updates,
+      });
+    }
+
+    throw new HttpException('User not found', HttpStatus.NOT_FOUND);
   }
 }

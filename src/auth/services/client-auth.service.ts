@@ -3,9 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PostgresErrorCodes } from 'src/database/postgresErrorCodes.enum';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { AuthCode } from '../auth-code.entity';
-import { Repository } from 'typeorm';
 import ClientRegisterRequestDto from '../dto/client-register-request.dto';
 import { ClientsService } from 'src/clients/clients.service';
 import { ClientTokenPayload } from '../types/client-token-payload.interface';
@@ -21,8 +18,6 @@ export class ClientAuthService {
     private configService: ConfigService,
     private clientsService: ClientsService,
     private jwtService: JwtService,
-    @InjectRepository(AuthCode)
-    private readonly authCodesRepository: Repository<AuthCode>,
   ) {}
 
   public async register(dto: ClientRegisterRequestDto) {
@@ -35,6 +30,7 @@ export class ClientAuthService {
         appId: uuidv4(),
         redirectUris: [],
         createdAt: new Date(),
+        users: [],
       });
       return { ...createdClient, password: undefined };
     } catch (error) {
