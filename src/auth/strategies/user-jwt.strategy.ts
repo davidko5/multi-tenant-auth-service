@@ -1,10 +1,10 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { UsersService } from 'src/users/users.service';
 import { ConfigService } from '@nestjs/config';
-import { UserTokenPayload } from '../types/user-token-payload.interface';
+import { TokenPayload } from '../types/token-payload.interface';
 
 @Injectable()
 export class UserJwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
@@ -22,7 +22,11 @@ export class UserJwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
     });
   }
 
-  validate(payload: UserTokenPayload) {
-    return this.usersService.getById(payload.userId);
+  validate(payload: TokenPayload) {
+    if (payload.type !== 'user') {
+      throw new UnauthorizedException('Invalid token type for user access');
+    }
+
+    return this.usersService.getById(payload.id);
   }
 }

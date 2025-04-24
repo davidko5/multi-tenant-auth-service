@@ -5,7 +5,7 @@ import { PostgresErrorCodes } from 'src/database/postgresErrorCodes.enum';
 import { ConfigService } from '@nestjs/config';
 import ClientRegisterRequestDto from '../dto/client-register-request.dto';
 import { ClientsService } from 'src/clients/clients.service';
-import { ClientTokenPayload } from '../types/client-token-payload.interface';
+import { TokenPayload } from '../types/token-payload.interface';
 import { v4 as uuidv4 } from 'uuid';
 
 interface PostgresError extends Error {
@@ -87,7 +87,7 @@ export class ClientAuthService {
   }
 
   public getCookieWithJwtToken(clientId: number) {
-    const payload: ClientTokenPayload = { clientId };
+    const payload: TokenPayload = { id: clientId, type: 'client' };
     const token = this.jwtService.sign(payload);
 
     return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}`;

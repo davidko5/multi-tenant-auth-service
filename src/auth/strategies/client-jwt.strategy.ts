@@ -1,9 +1,9 @@
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { ClientTokenPayload } from '../types/client-token-payload.interface';
+import { TokenPayload } from '../types/token-payload.interface';
 import { ClientsService } from 'src/clients/clients.service';
 
 @Injectable()
@@ -25,7 +25,11 @@ export class ClientJwtStrategy extends PassportStrategy(
     });
   }
 
-  validate(payload: ClientTokenPayload) {
-    return this.clientsService.getById(payload.clientId);
+  validate(payload: TokenPayload) {
+    if (payload.type !== 'client') {
+      throw new UnauthorizedException('Invalid token type for client access');
+    }
+
+    return this.clientsService.getById(payload.id);
   }
 }

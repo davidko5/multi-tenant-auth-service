@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AuthCode } from '../auth-code.entity';
 import { LessThan, Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { UserTokenPayload } from '../types/user-token-payload.interface';
+import { TokenPayload } from '../types/token-payload.interface';
 import { ClientsService } from 'src/clients/clients.service';
 
 interface PostgresError extends Error {
@@ -174,7 +174,7 @@ export class UserAuthService {
   }
 
   private getCookieWithJwtToken(userId: number) {
-    const payload: UserTokenPayload = { userId };
+    const payload: TokenPayload = { id: userId, type: 'user' };
     const token = this.jwtService.sign(payload);
 
     return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}`;
