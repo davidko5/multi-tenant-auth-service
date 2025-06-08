@@ -12,7 +12,6 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import RequestWithUser from '../types/request-with-user.interface';
 import { ClientLocalAuthenticationGuard } from '../guards/client-local-authentication.guard';
 import { ClientJwtAuthenticationGuard } from '../guards/client-jwt-authentication.guard';
 import RequestWithClient from '../types/request-with-client.interface';
@@ -40,7 +39,7 @@ export class ClientAuthController {
 
   @UseGuards(ClientJwtAuthenticationGuard)
   @Get('authenticated-client')
-  getProfile(@Request() req: RequestWithUser) {
+  getProfile(@Request() req: RequestWithClient) {
     return { ...req.user, password: undefined };
   }
 

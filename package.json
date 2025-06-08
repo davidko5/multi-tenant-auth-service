@@ -1,6 +1,12 @@
 {
   "private": true,
+  "scripts": {
+    "start:api-dev": "npm run --workspace apps/mtas-api start:dev",
+    "start:ui-dev": "npm run --workspace apps/mtas-ui dev",
+    "start:dev": "npm run start:api-dev & npm run start:ui-dev"
+  },
   "workspaces": [
-    "apps/mtas-api"
+    "apps/mtas-api",
+    "apps/mtas-ui"
   ]
 }

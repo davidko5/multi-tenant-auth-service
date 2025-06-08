@@ -1,6 +1,6 @@
 import { IsEmail, IsString, MinLength } from 'class-validator';
 
-class UserLoginRequestDto {
+class ClientLoginRequestDto {
   @IsEmail()
   email: string;
 
@@ -9,4 +9,4 @@ class UserLoginRequestDto {
   password: string;
 }
 
-export default UserLoginRequestDto;
+export default ClientLoginRequestDto;

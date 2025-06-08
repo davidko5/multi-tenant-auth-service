@@ -8,7 +8,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @UseGuards(UserJwtAuthenticationGuard)
-  @Patch('update/:id')
+  @Patch(':id')
   updateClient(@Body() dto: UserUpdateRequestDto, @Param('id') id: string) {
     return this.usersService.update({
       id: parseInt(id),
