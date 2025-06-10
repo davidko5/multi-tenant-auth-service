@@ -14,10 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/header';
-import {
-  useClientLogin,
-  useGetAuthenticatedClient,
-} from '@/hooks/use-auth-queries';
+import { useClientLogin } from '@/hooks/use-auth-queries';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -33,7 +30,6 @@ export default function ClientLoginPage() {
   const router = useRouter();
 
   const clientLogin = useClientLogin();
-  const { refetch: refetchClient } = useGetAuthenticatedClient();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,11 +47,8 @@ export default function ClientLoginPage() {
           password: values.password,
         })
         .then(async () => {
-          // await clientApi.getAuthenticatedClient()
-          await refetchClient();
           router.push('/client/dashboard');
         });
-      // The redirect will be handled in the auth provider
     } catch (error) {
       console.error('Login failed:', error);
     }

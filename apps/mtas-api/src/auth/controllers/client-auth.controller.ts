@@ -14,8 +14,8 @@ import {
 import { Response } from 'express';
 import { ClientLocalAuthenticationGuard } from '../guards/client-local-authentication.guard';
 import { ClientJwtAuthenticationGuard } from '../guards/client-jwt-authentication.guard';
-import RequestWithClient from '../types/request-with-client.interface';
 import ClientRegisterRequestDto from '../dto/client-register-request.dto';
+import RequestWithUser from '../types/request-with-user.interface';
 
 @Controller('client-auth')
 export class ClientAuthController {
@@ -29,9 +29,9 @@ export class ClientAuthController {
   @UseGuards(ClientLocalAuthenticationGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  signIn(@Req() req: RequestWithClient, @Res() res: Response) {
-    const { client } = req;
-    const cookie = this.clientAuthService.getCookieWithJwtToken(client.id);
+  signIn(@Req() req: RequestWithUser, @Res() res: Response) {
+    const { user } = req;
+    const cookie = this.clientAuthService.getCookieWithJwtToken(user.id);
     res.setHeader('Set-Cookie', cookie);
 
     return res.send();
@@ -39,7 +39,7 @@ export class ClientAuthController {
 
   @UseGuards(ClientJwtAuthenticationGuard)
   @Get('authenticated-client')
-  getProfile(@Request() req: RequestWithClient) {
+  getProfile(@Request() req: RequestWithUser) {
     return { ...req.user, password: undefined };
   }
 

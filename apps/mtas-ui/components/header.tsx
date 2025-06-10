@@ -6,12 +6,18 @@ import {
   useClientLogout,
   useGetAuthenticatedClient,
 } from '@/hooks/use-auth-queries';
+import { isPrivate } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 
 export function Header() {
-  const { data: client } = useGetAuthenticatedClient();
-  const { mutate: logout } = useClientLogout();
   const router = useRouter();
+  const path = usePathname();
+
+  const { data: client } = useGetAuthenticatedClient(
+    isPrivate(path),
+  );
+  const { mutate: logout } = useClientLogout();
 
   return (
     <header className="border-b border-gray-100 px-5">

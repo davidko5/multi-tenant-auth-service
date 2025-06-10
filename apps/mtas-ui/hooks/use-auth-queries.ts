@@ -1,6 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  UseQueryOptions,
+} from '@tanstack/react-query';
 import { clientApi } from '@/lib/api';
 import { toast } from 'sonner';
 import UserLoginRequestDto from '../../mtas-api/src/auth/dto/user-login-request.dto';
@@ -33,10 +38,14 @@ export function useUserRegister() {
 
 // Client authentication hooks
 export function useClientLogin() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (credentials: ClientLoginRequestDto) =>
       clientApi.login(credentials),
     onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['clientProfile'] });
+      
       toast.success('Logged in successfully');
     },
     onError: () => {
@@ -55,7 +64,7 @@ export function useClientRegister() {
   });
 }
 
-export function useGetAuthenticatedClient() {
+export function useGetAuthenticatedClient(enabled: boolean = true) {
   return useQuery<{
     id: number;
     email: string;
@@ -67,6 +76,7 @@ export function useGetAuthenticatedClient() {
       const response = await clientApi.getAuthenticatedClient();
       return response.data;
     },
+    enabled,
   });
 }
 

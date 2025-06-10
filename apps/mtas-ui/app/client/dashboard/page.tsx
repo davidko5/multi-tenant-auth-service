@@ -28,9 +28,10 @@ import {
   useGetAuthenticatedClient,
   useUpdateClientProfile,
 } from '@/hooks/use-auth-queries';
+import { Spinner } from '@/components/ui/spiner';
 
 const clientSchema = z.object({
-  appId: z.string(),
+  appId: z.string().nonempty({ message: 'App ID is required' }),
   redirectUris: z.array(
     z.string().url({ message: 'Please enter a valid URL' }),
   ),
@@ -56,6 +57,7 @@ export default function ClientDashboardPage() {
   // Pull out field‐array helpers:
   const { fields, append, remove } = useFieldArray({
     control: form.control,
+    // @ts-ignore - TS expects name to be of type never for unknown reason
     name: 'redirectUris',
   });
 
@@ -82,6 +84,8 @@ export default function ClientDashboardPage() {
         updatedAppId: values.appId,
         updatedRedirectUris: values.redirectUris,
       },
+    }).catch((error) => {
+      form.reset();
     });
   }
 
@@ -89,10 +93,11 @@ export default function ClientDashboardPage() {
     return (
       <>
         <Header />
-        <div className="container py-8">
+        <div className="py-8">
           <h1 className="text-2xl font-medium mb-6">Client Dashboard</h1>
-          <div className="flex items-center justify-center h-64">
-            <p className="text-gray-500">Loading client data...</p>
+          <div className="flex flex-col items-center justify-center h-64">
+            <Spinner className="text-gray-500" />
+            <p className="text-gray-500">Loading client data</p>
           </div>
         </div>
       </>
@@ -102,7 +107,7 @@ export default function ClientDashboardPage() {
   return (
     <>
       <Header />
-      <div className="container py-8 px-5">
+      <div className="py-8 px-5">
         <h1 className="text-2xl font-medium mb-6">Client Dashboard</h1>
 
         <Tabs
@@ -181,13 +186,16 @@ export default function ClientDashboardPage() {
                                     control={form.control}
                                     name={`redirectUris.${index}` as const}
                                     render={({ field }) => (
-                                      <FormItem className="flex items-center gap-2">
-                                        <FormControl>
-                                          <Input
-                                            placeholder="https://…"
-                                            {...field}
-                                          />
-                                        </FormControl>
+                                      <FormItem className="flex items-start gap-2">
+                                        <div className="flex-1">
+                                          <FormControl>
+                                            <Input
+                                              placeholder="https://…"
+                                              {...field}
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </div>
                                         <Button
                                           type="button"
                                           variant="ghost"
@@ -196,7 +204,6 @@ export default function ClientDashboardPage() {
                                         >
                                           <X className="h-4 w-4" />
                                         </Button>
-                                        <FormMessage />
                                       </FormItem>
                                     )}
                                   />

@@ -1,8 +1,9 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 class ClientUpdateRequestDto {
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
   updatedAppId?: string;
 
   @IsString({ each: true })
