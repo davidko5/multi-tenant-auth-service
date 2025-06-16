@@ -34,7 +34,7 @@ api.interceptors.response.use(
 // User API endpoints
 export const userApi = {
   login: (credentials: UserLoginRequestDto) =>
-    api.post('/auth-user/login', credentials),
+    api.post('/user-auth/login', credentials),
 
   register: (userData: UserRegisterRequestDto) =>
     api.post('/user-auth/register', userData),

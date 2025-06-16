@@ -6,7 +6,7 @@ import {
   useQueryClient,
   UseQueryOptions,
 } from '@tanstack/react-query';
-import { clientApi } from '@/lib/api';
+import { clientApi, userApi } from '@/lib/api';
 import { toast } from 'sonner';
 import UserLoginRequestDto from '../../mtas-api/src/auth/dto/user-login-request.dto';
 import UserRegisterRequestDto from '../../mtas-api/src/auth/dto/user-register-request.dto';
@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 export function useUserLogin() {
   return useMutation({
     mutationFn: (credentials: UserLoginRequestDto) =>
-      clientApi.login(credentials),
+      userApi.login(credentials),
     onError: () => {
       toast.error('An error occurred during login');
     },
@@ -29,7 +29,7 @@ export function useUserLogin() {
 export function useUserRegister() {
   return useMutation({
     mutationFn: (userData: UserRegisterRequestDto) =>
-      clientApi.register(userData),
+      userApi.register(userData),
     onError: () => {
       toast.error('An error occurred during registration');
     },

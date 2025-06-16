@@ -39,8 +39,6 @@ export class UserAuthService {
         throw new HttpException('Client not found', HttpStatus.BAD_REQUEST);
       }
 
-      console.log(dto.appId, client);
-
       const createdUser = await this.usersService.create({
         ...dto,
         client,
