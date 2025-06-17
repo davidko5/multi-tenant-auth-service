@@ -18,6 +18,7 @@ import { Header } from '@/components/header';
 import { useUserLogin } from '@/hooks/use-auth-queries';
 import Image from 'next/image';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useEffect } from 'react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -63,9 +64,14 @@ export default function UserLoginPage() {
     }
   }
 
+  useEffect(() => {
+    if (!redirectUri || !appId) {
+      router.replace('/');
+    }
+  }, [redirectUri, appId]);
+
   return (
     <>
-      <Header />
       <div className="flex min-h-[calc(100vh-64px)]">
         {/* Left side with image */}
         <div className="hidden md:flex md:w-1/2 bg-gray-100 items-center justify-center p-6">

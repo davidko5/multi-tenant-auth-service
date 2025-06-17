@@ -58,7 +58,6 @@ export default function ClientRegisterPage() {
 
   return (
     <>
-      <Header />
       <div className="flex min-h-[calc(100vh-64px)]">
         {/* Left side with image */}
         <div className="hidden md:flex md:w-1/2 bg-gray-100 items-center justify-center p-6">

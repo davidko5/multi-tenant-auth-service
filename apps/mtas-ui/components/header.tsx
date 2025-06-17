@@ -20,11 +20,11 @@ export function Header() {
   const { mutate: logout } = useClientLogout();
 
   return (
-    <header className="border-b border-gray-100 px-5">
+    <header className="absolute top-0 w-full bg-white border-b border-gray-100 px-5">
       <div className=" flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="font-medium text-gray-700">
-            Auth Portal
+          <Link href="/#form" className="font-medium text-gray-700">
+            M T A S
           </Link>
         </div>
 

@@ -92,7 +92,6 @@ export default function ClientDashboardPage() {
   if (isLoadingProfile) {
     return (
       <>
-        <Header />
         <div className="py-8">
           <h1 className="text-2xl font-medium mb-6">Client Dashboard</h1>
           <div className="flex flex-col items-center justify-center h-64">
@@ -106,7 +105,6 @@ export default function ClientDashboardPage() {
 
   return (
     <>
-      <Header />
       <div className="py-8 px-5">
         <h1 className="text-2xl font-medium mb-6">Client Dashboard</h1>
 
