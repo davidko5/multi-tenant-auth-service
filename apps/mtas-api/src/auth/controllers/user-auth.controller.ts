@@ -18,6 +18,7 @@ import { Response } from 'express';
 import UserLoginRequestDto from '../dto/user-login-request.dto';
 import UserTokenExchangeRequestDto from '../dto/user-token-exchange-request.dto';
 import RequestWithUser from '../types/request-with-user.interface';
+import UserLoginResponseDto from '../dto/user-login-response.dto';
 
 @Controller('user-auth')
 export class UserAuthController {
@@ -31,14 +32,16 @@ export class UserAuthController {
   @UseGuards(UserLocalAuthenticationGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  signIn(@Req() req: RequestWithUser, @Body() dto: UserLoginRequestDto) {
+  async signIn(@Req() req: RequestWithUser, @Body() dto: UserLoginRequestDto) {
     const { user } = req;
 
-    return this.userAuthService.createAuthCode(
+    const authCode = await this.userAuthService.createAuthCode(
       user.id,
       dto.appId,
       dto.redirectUri,
     );
+
+    return new UserLoginResponseDto(authCode);
   }
 
   @HttpCode(200)

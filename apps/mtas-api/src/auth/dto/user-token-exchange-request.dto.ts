@@ -10,7 +10,8 @@ class UserTokenExchangeRequestDto {
   appId: string;
 
   @IsNotEmpty()
-  @IsUrl()
+  // require_tld: false to allow localhost
+  @IsUrl({ require_tld: false })
   redirectUri: string;
 }
 

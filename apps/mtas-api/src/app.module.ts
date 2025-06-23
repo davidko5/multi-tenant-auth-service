@@ -23,6 +23,7 @@ import { CommonModule } from './common/common.module';
         PORT: Joi.number(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION_TIME: Joi.string().required(),
+        UI_ORIGIN: Joi.string().required(),
       }),
     }),
     ScheduleModule.forRoot(),

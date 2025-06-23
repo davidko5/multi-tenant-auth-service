@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, IsUrl, MinLength } from 'class-validator';
 
 class UserLoginRequestDto {
   @IsEmail()
@@ -12,6 +12,8 @@ class UserLoginRequestDto {
   appId: string;
 
   @IsString()
+  // require_tld: false to allow localhost
+  @IsUrl({ require_tld: false })
   redirectUri: string;
 }
 

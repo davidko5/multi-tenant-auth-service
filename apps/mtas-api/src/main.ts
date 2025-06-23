@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
+import { OriginServiceService } from './clients/origin-service.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,8 +18,24 @@ async function bootstrap() {
     }),
   );
 
+  const originSvc = app.get(OriginServiceService);
+  await originSvc.load();
+
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: (
+      incomingOrigin: string | undefined,
+      callback: (err: Error | null, allowed?: boolean) => void,
+    ) => {
+      // Allow server-to-server or tools when origin is undefined
+      if (!incomingOrigin || originSvc.isAllowed(incomingOrigin)) {
+        callback(null, true);
+      } else {
+        callback(
+          new Error(`CORS policy: origin ${incomingOrigin} not allowed`),
+          false,
+        );
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
