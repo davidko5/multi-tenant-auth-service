@@ -9,17 +9,26 @@ import {
 import { clientApi, userApi } from '@/lib/api';
 import { toast } from 'sonner';
 import UserLoginRequestDto from '../../mtas-api/src/auth/dto/user-login-request.dto';
+import UserLoginResponseDto from '../../mtas-api/src/auth/dto/user-login-response.dto';
 import UserRegisterRequestDto from '../../mtas-api/src/auth/dto/user-register-request.dto';
 import ClientLoginRequestDto from '../../mtas-api/src/auth/dto/client-login-request.dto';
 import ClientRegisterRequestDto from '../../mtas-api/src/auth/dto/client-register-request.dto';
 import ClientUpdateRequestDto from '../../mtas-api/src/auth/dto/client-update-request.dto';
 import { useRouter } from 'next/navigation';
+import { AxiosResponse } from 'axios';
 
 // User authentication hooks
 export function useUserLogin() {
-  return useMutation({
+  return useMutation<
+    AxiosResponse<UserLoginResponseDto>,
+    Error,
+    UserLoginRequestDto
+  >({
     mutationFn: (credentials: UserLoginRequestDto) =>
       userApi.login(credentials),
+    onSuccess: (data) => {
+      return data;
+    },
     onError: () => {
       toast.error('An error occurred during login');
     },
@@ -45,7 +54,7 @@ export function useClientLogin() {
       clientApi.login(credentials),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['clientProfile'] });
-      
+
       toast.success('Logged in successfully');
     },
     onError: () => {

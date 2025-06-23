@@ -51,9 +51,9 @@ export default function UserLoginPage() {
         password: values.password,
         appId: appId || '',
         redirectUri: redirectUri || '',
-      }).then(() => {
+      }).then((res) => {
         if (redirectUri && appId) {
-          router.push(redirectUri);
+          router.push(`${redirectUri}?auth_code=${res.data.authCode}`);
         } else {
           router.push('/user/dashboard');
         }
