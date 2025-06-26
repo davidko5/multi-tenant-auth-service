@@ -37,19 +37,44 @@ export class UsersService {
     return newUser;
   }
 
-  async update(params: { id: number; updatedName?: string }): Promise<User> {
+  async update(params: {
+    id: number;
+    updatedName?: string;
+  }): Promise<Partial<User>> {
     const user = await this.getById(params.id);
     if (user) {
       const updates = filterUndefined({
         name: params.updatedName,
       });
 
-      return this.usersRepository.save({
+      const updatedUser = await this.usersRepository.save({
         ...user,
         ...updates,
       });
+
+      return {
+        ...updatedUser,
+        password: undefined,
+        client: undefined,
+      };
     }
 
     throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+  }
+
+  async getUserClient(userId: number) {
+    const user = await this.getById(userId);
+    return user.client;
+  }
+
+  async getAllClientUsers(clientId: number) {
+    const users = await this.usersRepository.find({
+      where: { client: { id: clientId } },
+    });
+    return users.map((user) => ({
+      ...user,
+      password: undefined,
+      client: undefined,
+    }));
   }
 }

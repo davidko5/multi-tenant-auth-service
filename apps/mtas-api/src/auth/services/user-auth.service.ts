@@ -73,7 +73,7 @@ export class UserAuthService {
       await this.verifyPassword(plainTextPassword, user.password);
       await this.verifyRedirectUri(redirectUri, appId);
 
-      return { ...user, password: undefined };
+      return { ...user, password: undefined, client: undefined };
     } catch {
       throw new HttpException(
         'Wrong credentials or client mismatch',
