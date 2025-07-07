@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { UserAuthController } from './controllers/user-auth.controller';
 import { UserAuthService } from './services/user-auth.service';
 import { UsersModule } from 'src/users/users.module';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { ClientLocalStrategy } from './strategies/client-local.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
@@ -14,25 +14,18 @@ import { ClientsModule } from 'src/clients/clients.module';
 import { UserJwtStrategy } from './strategies/user-jwt.strategy';
 import { UserLocalStrategy } from './strategies/user-local.strategy';
 import { ClientJwtStrategy } from './strategies/client-jwt.strategy';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { JwksController } from './controllers/jwks.controller';
 @Module({
   imports: [
     UsersModule,
     ClientsModule,
     ConfigModule,
     PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
-        signOptions: {
-          expiresIn: `${configService.get('JWT_EXPIRATION_TIME')}s`,
-        },
-      }),
-    }),
     TypeOrmModule.forFeature([AuthCode]),
   ],
-  controllers: [UserAuthController, ClientAuthController],
+  controllers: [UserAuthController, ClientAuthController, JwksController],
   providers: [
     UserAuthService,
     ClientAuthService,
@@ -40,6 +33,36 @@ import { ClientJwtStrategy } from './strategies/client-jwt.strategy';
     UserLocalStrategy,
     UserJwtStrategy,
     ClientJwtStrategy,
+    // user jwt service
+    {
+      provide: 'USER_JWT_SERVICE',
+      useFactory: (configService: ConfigService) => {
+        const privateKey = readFileSync(join(__dirname, '../../private.pem'));
+        const publicKey = readFileSync(join(__dirname, '../../public.pem'));
+        const expiresIn = `${configService.get<number>('JWT_EXPIRATION_TIME')}s`;
+
+        return new JwtService({
+          privateKey,
+          publicKey,
+          signOptions: { algorithm: 'RS256', expiresIn, keyid: 'v1' },
+        });
+      },
+      inject: [ConfigService],
+    },
+    // client jwt service
+    {
+      provide: 'CLIENT_JWT_SERVICE',
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        const expiresIn = `${configService.get<number>('JWT_EXPIRATION_TIME')}s`;
+
+        return new JwtService({
+          secret,
+          signOptions: { algorithm: 'HS256', expiresIn },
+        });
+      },
+      inject: [ConfigService],
+    },
   ],
 })
 export class AuthModule {}

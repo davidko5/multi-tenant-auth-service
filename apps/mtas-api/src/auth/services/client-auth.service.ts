@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PostgresErrorCodes } from 'src/database/postgresErrorCodes.enum';
@@ -17,6 +17,7 @@ export class ClientAuthService {
   constructor(
     private configService: ConfigService,
     private clientsService: ClientsService,
+    @Inject('CLIENT_JWT_SERVICE')
     private jwtService: JwtService,
   ) {}
 

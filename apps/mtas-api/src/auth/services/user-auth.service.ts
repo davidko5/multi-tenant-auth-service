@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { UsersService } from '../../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import UserRegisterRequestDto from '../dto/user-register-request.dto';
@@ -25,6 +25,7 @@ export class UserAuthService {
     private configService: ConfigService,
     private usersService: UsersService,
     private clientsService: ClientsService,
+    @Inject('USER_JWT_SERVICE')
     private jwtService: JwtService,
     @InjectRepository(AuthCode)
     private readonly authCodesRepository: Repository<AuthCode>,
