@@ -3,7 +3,9 @@
   "scripts": {
     "start:api-dev": "npm run --workspace apps/mtas-api start:dev",
     "start:ui-dev": "npm run --workspace apps/mtas-ui dev",
-    "start:dev": "npm run start:api-dev & npm run start:ui-dev"
+    "start:dev": "npm run start:api-dev & npm run start:ui-dev",
+    "start:api-prod": "npm run --workspace apps/mtas-api start",
+    "start:ui-prod": "npm run --workspace apps/mtas-ui start"
   },
   "workspaces": [
     "apps/mtas-api",
