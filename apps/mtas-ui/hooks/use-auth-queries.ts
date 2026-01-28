@@ -4,27 +4,28 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-  UseQueryOptions,
 } from '@tanstack/react-query';
 import { clientApi, userApi } from '@/lib/api';
 import { toast } from 'sonner';
-import UserLoginRequestDto from '../../mtas-api/src/auth/dto/user-login-request.dto';
-import UserLoginResponseDto from '../../mtas-api/src/auth/dto/user-login-response.dto';
-import UserRegisterRequestDto from '../../mtas-api/src/auth/dto/user-register-request.dto';
-import ClientLoginRequestDto from '../../mtas-api/src/auth/dto/client-login-request.dto';
-import ClientRegisterRequestDto from '../../mtas-api/src/auth/dto/client-register-request.dto';
-import ClientUpdateRequestDto from '../../mtas-api/src/auth/dto/client-update-request.dto';
+import {
+  UserLoginRequest,
+  UserLoginResponse,
+  UserRegisterRequest,
+  ClientLoginRequest,
+  ClientRegisterRequest,
+  ClientUpdateRequest,
+} from '@/types/auth';
 import { useRouter } from 'next/navigation';
 import { AxiosResponse } from 'axios';
 
 // User authentication hooks
 export function useUserLogin() {
   return useMutation<
-    AxiosResponse<UserLoginResponseDto>,
+    AxiosResponse<UserLoginResponse>,
     Error,
-    UserLoginRequestDto
+    UserLoginRequest
   >({
-    mutationFn: (credentials: UserLoginRequestDto) =>
+    mutationFn: (credentials: UserLoginRequest) =>
       userApi.login(credentials),
     onSuccess: (data) => {
       return data;
@@ -37,7 +38,7 @@ export function useUserLogin() {
 
 export function useUserRegister() {
   return useMutation({
-    mutationFn: (userData: UserRegisterRequestDto) =>
+    mutationFn: (userData: UserRegisterRequest) =>
       userApi.register(userData),
     onError: () => {
       toast.error('An error occurred during registration');
@@ -50,7 +51,7 @@ export function useClientLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (credentials: ClientLoginRequestDto) =>
+    mutationFn: (credentials: ClientLoginRequest) =>
       clientApi.login(credentials),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['clientProfile'] });
@@ -65,7 +66,7 @@ export function useClientLogin() {
 
 export function useClientRegister() {
   return useMutation({
-    mutationFn: (clientData: ClientRegisterRequestDto) =>
+    mutationFn: (clientData: ClientRegisterRequest) =>
       clientApi.register(clientData),
     onError: () => {
       toast.error('An error occurred during registration');
@@ -91,7 +92,7 @@ export function useGetAuthenticatedClient(enabled: boolean = true) {
 
 export function useUpdateClientProfile() {
   return useMutation({
-    mutationFn: (params: { clientId: string; data: ClientUpdateRequestDto }) =>
+    mutationFn: (params: { clientId: string; data: ClientUpdateRequest }) =>
       clientApi
         .updateProfile(params.clientId, params.data)
         .then((res) => res.data),

@@ -14,10 +14,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/header';
 import { useUserLogin } from '@/hooks/use-auth-queries';
 import Image from 'next/image';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useEffect } from 'react';
 
 const formSchema = z.object({

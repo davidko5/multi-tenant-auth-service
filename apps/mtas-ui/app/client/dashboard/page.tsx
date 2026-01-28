@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
 import {
@@ -57,7 +56,7 @@ export default function ClientDashboardPage() {
   // Pull out field‐array helpers:
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    // @ts-ignore - TS expects name to be of type never for unknown reason
+    // @ts-expect-error - TS expects name to be of type never for unknown reason
     name: 'redirectUris',
   });
 
@@ -84,7 +83,7 @@ export default function ClientDashboardPage() {
         updatedAppId: values.appId,
         updatedRedirectUris: values.redirectUris,
       },
-    }).catch((error) => {
+    }).catch(() => {
       form.reset();
     });
   }

@@ -1,10 +1,11 @@
 import axios, { AxiosError } from 'axios';
-import UserLoginRequestDto from '../../mtas-api/src/auth/dto/user-login-request.dto';
-import UserRegisterRequestDto from '../../mtas-api/src/auth/dto/user-register-request.dto';
-import ClientLoginRequestDto from '../../mtas-api/src/auth/dto/client-login-request.dto';
-import ClientRegisterRequestDto from '../../mtas-api/src/auth/dto/client-register-request.dto';
-import ClientUpdateRequestDto from '../../mtas-api/src/auth/dto/client-update-request.dto';
-import Router from 'next/router';
+import {
+  UserLoginRequest,
+  UserRegisterRequest,
+  ClientLoginRequest,
+  ClientRegisterRequest,
+  ClientUpdateRequest,
+} from '@/types/auth';
 
 // Create an axios instance with base URL and default headers
 const api = axios.create({
@@ -33,10 +34,10 @@ api.interceptors.response.use(
 
 // User API endpoints
 export const userApi = {
-  login: (credentials: UserLoginRequestDto) =>
+  login: (credentials: UserLoginRequest) =>
     api.post('/user-auth/login', credentials),
 
-  register: (userData: UserRegisterRequestDto) =>
+  register: (userData: UserRegisterRequest) =>
     api.post('/user-auth/register', userData),
 
   getAuthenticatedUser: () => api.get('/user-auth/authenticated-user'),
@@ -46,15 +47,15 @@ export const userApi = {
 
 // Client API endpoints
 export const clientApi = {
-  login: (credentials: ClientLoginRequestDto) =>
+  login: (credentials: ClientLoginRequest) =>
     api.post('/client-auth/login', credentials),
 
-  register: (clientData: ClientRegisterRequestDto) =>
+  register: (clientData: ClientRegisterRequest) =>
     api.post('/client-auth/register', clientData),
 
   getAuthenticatedClient: () => api.get('/client-auth/authenticated-client'),
 
-  updateProfile: (clientId: string, data: ClientUpdateRequestDto) =>
+  updateProfile: (clientId: string, data: ClientUpdateRequest) =>
     api.patch(`/clients/${clientId}`, data),
 
   clientLogout: () => api.post('/client-auth/logout'),

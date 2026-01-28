@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/header';
 import { useClientLogin } from '@/hooks/use-auth-queries';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';

@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/header';
 import { useUserRegister } from '@/hooks/use-auth-queries';
 import Image from 'next/image';
 import { useEffect } from 'react';
@@ -53,7 +52,7 @@ export default function UserRegisterPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const { confirmPassword, ...userData } = values;
+      const { confirmPassword: _, ...userData } = values;
       await userRegister
         .mutateAsync({
           ...userData,

@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/header';
 import { useClientRegister } from '@/hooks/use-auth-queries';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -47,7 +46,7 @@ export default function ClientRegisterPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const { confirmPassword: _confirmPassword, ...clientData } = values;
+      const { confirmPassword: _, ...clientData } = values;
       await clientRegister.mutateAsync(clientData).then(() => {
         router.push('/client/login');
       });
