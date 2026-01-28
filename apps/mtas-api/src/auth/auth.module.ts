@@ -37,8 +37,12 @@ import { JwksController } from './controllers/jwks.controller';
     {
       provide: 'USER_JWT_SERVICE',
       useFactory: (configService: ConfigService) => {
-        const privateKey = readFileSync(join(__dirname, '../../private.pem'));
-        const publicKey = readFileSync(join(__dirname, '../../public.pem'));
+        const privateKey =
+          configService.get<string>('JWT_PRIVATE_KEY') ||
+          readFileSync(join(__dirname, '../../private.pem'), 'utf8');
+        const publicKey =
+          configService.get<string>('JWT_PUBLIC_KEY') ||
+          readFileSync(join(__dirname, '../../public.pem'), 'utf8');
         const expiresIn = `${configService.get<number>('JWT_EXPIRATION_TIME')}s`;
 
         return new JwtService({
