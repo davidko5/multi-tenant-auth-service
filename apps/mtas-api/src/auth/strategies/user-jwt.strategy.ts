@@ -7,6 +7,13 @@ import { TokenPayload } from '../types/token-payload.interface';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
+function getPublicKey(): string {
+  if (process.env.JWT_PUBLIC_KEY) {
+    return process.env.JWT_PUBLIC_KEY;
+  }
+  return readFileSync(join(__dirname, '../../../public.pem'), 'utf8');
+}
+
 @Injectable()
 export class UserJwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
   constructor(private readonly usersService: UsersService) {
@@ -17,7 +24,7 @@ export class UserJwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: readFileSync(join(__dirname, '../../../public.pem'), 'utf8'),
+      secretOrKey: getPublicKey(),
       algorithms: ['RS256'],
     });
   }

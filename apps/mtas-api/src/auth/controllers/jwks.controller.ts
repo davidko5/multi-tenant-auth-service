@@ -3,13 +3,20 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { pem2jwk } from 'pem-jwk';
 
+function getPublicKey(): string {
+  if (process.env.JWT_PUBLIC_KEY) {
+    return process.env.JWT_PUBLIC_KEY;
+  }
+  return readFileSync(join(__dirname, '../../../public.pem'), 'utf8');
+}
+
 @Controller('.well-known')
 export class JwksController {
   private readonly jwks: { keys: any[] };
 
   constructor() {
     // Load your public key as text
-    const pubPem = readFileSync(join(__dirname, '../../../public.pem'), 'utf8');
+    const pubPem = getPublicKey();
 
     // Convert to JWK
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
