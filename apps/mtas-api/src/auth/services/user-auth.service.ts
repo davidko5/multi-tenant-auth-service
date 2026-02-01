@@ -111,8 +111,9 @@ export class UserAuthService {
     }
   }
 
+  // TODO: Remove SameSite=None; Secure when UI and API are on the same domain
   public getCookieForLogOut() {
-    return 'Authentication=; HttpOnly; Path=/; Max-Age=0';
+    return 'Authentication=; HttpOnly; Path=/; Max-Age=0; SameSite=None; Secure';
   }
 
   public async createAuthCode(
@@ -176,7 +177,7 @@ export class UserAuthService {
     const payload: TokenPayload = { id: userId, type: 'user' };
     const token = this.jwtService.sign(payload);
 
-    return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}`;
+    return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}; SameSite=None; Secure`;
   }
 
   private generateAuthCode(): string {
