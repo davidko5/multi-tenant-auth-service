@@ -31,8 +31,11 @@ export class OriginServiceService {
       });
     });
 
-    newOrigins.add(this.configService.get('UI_ORIGIN') as string);
-
+    (this.configService.get('ALLOWED_UI_ORIGINS') as string)
+      .split(',')
+      .forEach((origin) => {
+        newOrigins.add(origin);
+      });
     this.origins = newOrigins;
     console.log(this.origins);
   }
