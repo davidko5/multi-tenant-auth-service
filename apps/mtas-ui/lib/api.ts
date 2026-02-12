@@ -9,7 +9,8 @@ import {
 
 // Create an axios instance with base URL and default headers
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5010',
+  // baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5010',
+  baseURL: "/api",
   headers: {
     'Content-Type': 'application/json',
   },
