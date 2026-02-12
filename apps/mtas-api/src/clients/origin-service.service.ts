@@ -34,7 +34,7 @@ export class OriginServiceService {
     (this.configService.get('ALLOWED_UI_ORIGINS') as string)
       .split(',')
       .forEach((origin) => {
-        newOrigins.add(origin);
+        newOrigins.add(origin.trim());
       });
     this.origins = newOrigins;
     console.log(this.origins);
