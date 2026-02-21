@@ -162,7 +162,10 @@ export class UserAuthService {
       redirectUri,
     });
 
-    return this.getCookieWithJwtToken(authCodeEntity.userId);
+    const payload: TokenPayload = { id: authCodeEntity.userId, type: 'user' };
+    const token = this.jwtService.sign(payload);
+
+    return { access_token: token };
   }
 
   @Cron(CronExpression.EVERY_12_HOURS)
@@ -173,6 +176,8 @@ export class UserAuthService {
     console.log('Expired auth codes cleaned up');
   }
 
+  // Not removing cause in future can be used with local auth
+  // for user authenticating to their profile at mtas
   private getCookieWithJwtToken(userId: number) {
     const payload: TokenPayload = { id: userId, type: 'user' };
     const token = this.jwtService.sign(payload);

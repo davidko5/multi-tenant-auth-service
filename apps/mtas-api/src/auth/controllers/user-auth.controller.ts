@@ -46,14 +46,9 @@ export class UserAuthController {
 
   @HttpCode(200)
   @Post('exchange-token')
-  async exchangeToken(
-    @Body() dto: UserTokenExchangeRequestDto,
-    @Res() res: Response,
-  ) {
-    const cookie = await this.userAuthService.exchangeAuthCodeForToken(dto);
-    res.setHeader('Set-Cookie', cookie);
-
-    return res.send();
+  async exchangeToken(@Body() dto: UserTokenExchangeRequestDto) {
+    const token = await this.userAuthService.exchangeAuthCodeForToken(dto);
+    return token;
   }
 
   @UseGuards(UserJwtAuthenticationGuard)

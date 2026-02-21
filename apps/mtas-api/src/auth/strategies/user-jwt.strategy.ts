@@ -19,9 +19,13 @@ export class UserJwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
   constructor(private readonly usersService: UsersService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
+        // Token from Cookie for requests from mtas-ui
         (req: Request) => {
           return (req.cookies as Record<string, string>)?.Authentication;
         },
+        // Bearer header token for requests from client apps,
+        // since we can not use Cookie because of different origins
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,
       secretOrKey: getPublicKey(),
