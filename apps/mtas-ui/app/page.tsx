@@ -69,179 +69,174 @@ export default function Home() {
         </div>
       </section>
       {/* About the platform */}
-      <section id="about" className="flex min-h-screen pt-24 pb-16">
+      <section id="about" className="pt-24 pb-16">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
+          <div className="max-w-5xl mx-auto">
+            {/* Hero */}
+            <div className="text-center mb-16">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                About Multi Tenant Auth Service (MTAS)
+                About MTAS
               </h2>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                A lightweight authentication broker that lets independent web
-                apps outsource sign-in functionality, so you can focus on what
-                matters most — your domain features.
+              <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+                A multi-tenant authentication broker. Register your app,
+                redirect users here for login, get back an RS256-signed JWT —
+                your backend verifies it locally using the public key.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-10 mb-16">
-              <div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">
-                  How It Works
-                </h3>
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                      1
-                    </div>
-                    <p className="text-gray-700">
-                      User hits a protected route in your app
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                      2
-                    </div>
-                    <p className="text-gray-700">
-                      Your app redirects to MTAS with client ID and redirect URI
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                      3
-                    </div>
-                    <p className="text-gray-700">
-                      MTAS presents a unified login/registration interface
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                      4
-                    </div>
-                    <p className="text-gray-700">
-                      Upon success, user gets redirected back with an auth code
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                      5
-                    </div>
-                    <p className="text-gray-700">
-                      Your app exchanges the code for a JWT token
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-semibold text-sm">
-                      6
-                    </div>
-                    <p className="text-gray-700">
-                      Validate JWTs locally with our public key—no extra network
-                      calls!
-                    </p>
-                  </div>
-                </div>
+            {/* Architecture diagram */}
+            <div className="mb-16">
+              <div className="bg-white rounded-xl">
+                <Image
+                  src="/mtas-diagram.jpg"
+                  alt="MTAS system architecture diagram showing communication between Client App, MTAS UI, MTAS API, and Client Backend"
+                  width={1200}
+                  height={675}
+                  className="w-full h-auto rounded"
+                />
               </div>
+              <p className="text-sm text-gray-500 text-center mt-3">
+                Your frontend redirects to MTAS for login, exchanges an auth
+                code for a JWT, and your backend verifies it using the MTAS
+                public key.
+              </p>
+            </div>
 
-              <div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">
-                  Key Benefits
-                </h3>
-                <div className="space-y-6">
-                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      🔒 Secure by Design
-                    </h4>
-                    <p className="text-gray-600 text-sm">
-                      RS256 JWT tokens, one-time codes, and bcrypt password
-                      hashing ensure your users' data stays protected.
-                    </p>
+            {/* How it works */}
+            <div className="mb-16">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-8 text-center">
+                How It Works
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { emoji: '🔗', text: 'Your app redirects the user to MTAS with your appId and redirect URI' },
+                  { emoji: '🔐', text: 'User authenticates on the MTAS login page' },
+                  { emoji: '🎟️', text: 'MTAS redirects back with a one-time auth code (5 min TTL)' },
+                  { emoji: '🔄', text: 'Your frontend exchanges the code for an RS256-signed JWT' },
+                  { emoji: '🔑', text: 'Your backend fetches the MTAS public key once and caches it' },
+                  { emoji: '✅', text: 'All subsequent requests are verified locally — no calls to MTAS' },
+                ].map((step, i) => (
+                  <div
+                    key={i}
+                    className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-xl">{step.emoji}</span>
+                      <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        Step {i + 1}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700">{step.text}</p>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      🚀 Stay Stateless
-                    </h4>
-                    <p className="text-gray-600 text-sm">
-                      Your apps remain completely stateless—MTAS handles all
-                      session management and cookie setting.
-                    </p>
-                  </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      🎯 Focus on Features
-                    </h4>
-                    <p className="text-gray-600 text-sm">
-                      Stop building auth flows and start building what makes
-                      your app unique.
-                    </p>
-                  </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      🏢 Client Isolation
-                    </h4>
-                    <p className="text-gray-600 text-sm">
-                      Each client app has its own user silo—users can't
-                      accidentally access other applications.
-                    </p>
-                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Key properties */}
+            <div className="mb-16">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-8 text-center">
+                Key Properties
+              </h3>
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    🏢 Tenant Isolation
+                  </h4>
+                  <p className="text-gray-600 text-sm">
+                    Each client app gets its own user pool. Users belong strictly
+                    to the client that registered them and are never shared. The
+                    same email can exist under different clients.
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    ⚡ Stateless Verification
+                  </h4>
+                  <p className="text-gray-600 text-sm">
+                    JWTs are signed with RS256 (asymmetric). Your backend fetches
+                    the public key from a standard JWKS endpoint once, then
+                    verifies every token locally.
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-100">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    🎟️ Auth Code Exchange
+                  </h4>
+                  <p className="text-gray-600 text-sm">
+                    OAuth2-inspired flow: login returns a short-lived auth code
+                    (single use, 5 min TTL) that gets exchanged for a JWT. Tokens
+                    never pass through browser redirects.
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 p-6 rounded-xl border border-purple-100">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    🛡️ Redirect URI Whitelist
+                  </h4>
+                  <p className="text-gray-600 text-sm">
+                    Login attempts are rejected unless the redirect URI is
+                    registered in the client&apos;s whitelist. Prevents open
+                    redirect attacks.
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-12">
+            {/* Tech stack */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-16">
               <h3 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-                Built with Modern Tech
+                Tech Stack
               </h3>
               <div className="grid md:grid-cols-3 gap-8">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Backend</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• NestJS v10 + class-validator</li>
-                    <li>• JWT (RS256) authentication</li>
-                    <li>• PostgreSQL + Prisma ORM</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Frontend</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Next.js 14 + React 18</li>
-                    <li>• shadcn/ui components</li>
-                    <li>• Zod validation</li>
-                    <li>• React Hook Form</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">
-                    DevOps & Quality
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="text-lg">⚙️</span> API
                   </h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Docker Compose</li>
-                    <li>• GitHub Actions CI/CD</li>
-                    <li>• Jest + Playwright testing</li>
-                    <li>• ESLint + Prettier</li>
+                  <ul className="text-sm text-gray-600 space-y-1.5">
+                    <li>NestJS 11 + TypeORM</li>
+                    <li>JWT (RS256 / HS256)</li>
+                    <li>PostgreSQL</li>
+                    <li>Passport.js</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="text-lg">🖥️</span> UI
+                  </h4>
+                  <ul className="text-sm text-gray-600 space-y-1.5">
+                    <li>Next.js 15 + React 19</li>
+                    <li>shadcn/ui + Tailwind CSS</li>
+                    <li>React Hook Form + Zod</li>
+                    <li>TanStack Query</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="text-lg">🚀</span> Infrastructure
+                  </h4>
+                  <ul className="text-sm text-gray-600 space-y-1.5">
+                    <li>Docker Compose (PostgreSQL)</li>
+                    <li>Vercel (UI)</li>
+                    <li>Render (API)</li>
                   </ul>
                 </div>
               </div>
             </div>
 
-            <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                Ready to Get Started?
+            {/* CTA */}
+            <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+                Try It Out
               </h3>
-              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                MTAS is evolving with new features like enhanced user
-                dashboards, multi-tenant isolation, and email workflows. Join us
-                in building the future of authentication!
+              <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+                Register a client account, configure your redirect URIs, and
+                integrate MTAS into your app.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  asChild
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Link href="/client/register">Register Your App</Link>
-                </Button>
-              </div>
-              <p className="text-sm text-gray-500 mt-4">
-                Questions or feedback? We'd love to hear from you!
-              </p>
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+              >
+                <Link href="/client/register">Register Your App</Link>
+              </Button>
             </div>
           </div>
         </div>

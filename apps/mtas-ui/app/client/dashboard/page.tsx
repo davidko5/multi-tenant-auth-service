@@ -28,6 +28,7 @@ import {
   useUpdateClientProfile,
 } from '@/hooks/use-auth-queries';
 import { Spinner } from '@/components/ui/spiner';
+import { CodeBlock } from '@/components/ui/code-block';
 
 const clientSchema = z.object({
   appId: z.string().nonempty({ message: 'App ID is required' }),
@@ -77,15 +78,17 @@ export default function ClientDashboardPage() {
       return;
     }
 
-    await updateProfile.mutateAsync({
-      clientId: clientData.id.toString(),
-      data: {
-        updatedAppId: values.appId,
-        updatedRedirectUris: values.redirectUris,
-      },
-    }).catch(() => {
-      form.reset();
-    });
+    await updateProfile
+      .mutateAsync({
+        clientId: clientData.id.toString(),
+        data: {
+          updatedAppId: values.appId,
+          updatedRedirectUris: values.redirectUris,
+        },
+      })
+      .catch(() => {
+        form.reset();
+      });
   }
 
   if (isLoadingProfile) {
@@ -131,7 +134,7 @@ export default function ClientDashboardPage() {
           </TabsList>
 
           <TabsContent value="overview" className="mt-0">
-            <div className="w-3xl">
+            <div className="max-w-3xl mx-auto">
               <Card className="border-gray-200 shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xl font-medium">
@@ -252,29 +255,155 @@ export default function ClientDashboardPage() {
           </TabsContent>
 
           <TabsContent value="integration" className="mt-0">
-            <Card className="border-gray-200 shadow-sm w-3xl">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-xl font-medium">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-8">
+                <h2 className="text-xl font-medium text-gray-900">
                   Integration Guide
-                </CardTitle>
-                <CardDescription>
-                  How to integrate with our authentication system
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm">
-                  To authenticate users with your application, redirect them to:
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Get your app connected to MTAS in four steps.
                 </p>
-                <code className="block bg-gray-100 p-2 rounded text-xs font-mono overflow-x-auto">
-                  {`http://localhost:3000/user/login?redirect_uri='https://your-app.com'&app_id=${clientData?.appId}`}
-                </code>
+              </div>
 
-                <p className="text-sm mt-4">
-                  After successful authentication, users will be redirected back
-                  to your application with temporary auth code.
-                </p>
-              </CardContent>
-            </Card>
+              {/* Steps 1 & 2 — side by side */}
+              <div className="grid md:grid-cols-2 gap-5 mb-5">
+                {/* Step 1 */}
+                <div className="rounded-xl border border-gray-200 bg-white p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-stone-100 text-stone-600 text-sm font-semibold">
+                      1
+                    </span>
+                    <h4 className="font-medium text-gray-900">
+                      Redirect users to login
+                    </h4>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Send users to the MTAS login page with your app ID and
+                    callback URL.
+                  </p>
+                  <div className="bg-stone-50 rounded-lg border border-stone-200 px-4 py-3">
+                    <p className="text-[10px] text-stone-400 mb-1 font-medium uppercase tracking-wider">
+                      Login URL
+                    </p>
+                    <code className="text-xs text-gray-700 font-mono break-all leading-relaxed">
+                      {`${window.location.origin}/user/login?appId=${clientData?.appId || '<your-app-id>'}&redirectUri=`}
+                      <span className="text-amber-600">
+                        {'<your-callback-url>'}
+                      </span>
+                    </code>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Redirect URI must be in your{' '}
+                    <span className="text-gray-600 font-medium">
+                      Trusted Redirect URIs
+                    </span>
+                    .
+                  </p>
+                </div>
+
+                {/* Step 2 */}
+                <div className="rounded-xl border border-gray-200 bg-white p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-stone-100 text-stone-600 text-sm font-semibold">
+                      2
+                    </span>
+                    <h4 className="font-medium text-gray-900">
+                      Handle the callback
+                    </h4>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-3">
+                    MTAS redirects back to your app with a one-time auth code in
+                    the URL.
+                  </p>
+                  <div className="bg-stone-50 rounded-lg border border-stone-200 px-4 py-3">
+                    <p className="text-[10px] text-stone-400 mb-1 font-medium uppercase tracking-wider">
+                      Your callback receives
+                    </p>
+                    <code className="text-xs text-gray-700 font-mono break-all leading-relaxed">
+                      {'https://your-app.com/callback?'}
+                      <span className="text-amber-600">
+                        auth_code=a1b2c3d4...
+                      </span>
+                    </code>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Extract{' '}
+                    <code className="bg-gray-100 px-1 py-0.5 rounded text-[11px] font-mono text-gray-600">
+                      auth_code
+                    </code>{' '}
+                    from query params. Single-use, 5 min expiry.
+                  </p>
+                </div>
+              </div>
+
+              {/* Steps 3 & 4 — full width with code */}
+              <div className="grid md:grid-cols-2 gap-5">
+                {/* Step 3 */}
+                <div className="rounded-xl border border-gray-200 bg-white p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-stone-100 text-stone-600 text-sm font-semibold">
+                      3
+                    </span>
+                    <h4 className="font-medium text-gray-900">
+                      Exchange code for JWT
+                    </h4>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-3">
+                    From your frontend, exchange the auth code for an access
+                    token.
+                  </p>
+                  <CodeBlock
+                    code={`const res = await fetch(
+  '${process.env.NEXT_PUBLIC_API_URL || 'https://<mtas-api>'}/user-auth/exchange-token',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      authCode: authCodeFromCallback,
+      appId: '${clientData?.appId || '<your-app-id>'}',
+      redirectUri: '<same URI from step 1>',
+    }),
+  }
+);
+
+const { access_token } = await res.json();`}
+                  />
+                </div>
+
+                {/* Step 4 */}
+                <div className="rounded-xl border border-gray-200 bg-white p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-full bg-stone-100 text-stone-600 text-sm font-semibold">
+                      4
+                    </span>
+                    <h4 className="font-medium text-gray-900">
+                      Verify JWT in your backend
+                    </h4>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Fetch the MTAS public key once, then verify tokens locally.
+                  </p>
+                  <CodeBlock
+                    code={`const jwksClient = require('jwks-rsa');
+const jwt = require('jsonwebtoken');
+
+const client = jwksClient({
+  jwksUri: '${process.env.NEXT_PUBLIC_API_URL || 'https://<mtas-api>'}/.well-known/jwks.json',
+  cache: true,
+});
+
+async function verifyToken(token) {
+  const decoded = jwt.decode(token, { complete: true });
+  const key = await client.getSigningKey(decoded.header.kid);
+  return jwt.verify(token, key.getPublicKey(), {
+    algorithms: ['RS256'],
+  });
+  // { id: 42, type: 'user', iat: ..., exp: ... }
+}`}
+                  />
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           {/* <TabsContent value="users" className="mt-0">
