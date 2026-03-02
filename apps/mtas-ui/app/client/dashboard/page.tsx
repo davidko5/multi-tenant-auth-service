@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -12,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -45,6 +46,17 @@ export default function ClientDashboardPage() {
   const updateProfile = useUpdateClientProfile();
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [copied, setCopied] = useState(false);
+
+  const copyTimeoutRef = useRef<NodeJS.Timeout>(null);
+
+  function handleCopy(text: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('Copied to clipboard');
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+  }
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -134,123 +146,141 @@ export default function ClientDashboardPage() {
           </TabsList>
 
           <TabsContent value="overview" className="mt-0">
-            <div className="max-w-3xl mx-auto">
-              <Card className="border-gray-200 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-medium">
-                    Profile Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Update your client profile details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(onSubmit)}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={form.control}
-                        name="appId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-gray-700">
-                              App ID
-                            </FormLabel>
+            <div className="max-w-3xl mx-auto space-y-6">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
+                  {/* App Identity section */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-5">
+                    <h3 className="text-base font-medium text-gray-900 mb-1">
+                      App Identity
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      The identifier your users authenticate against.
+                    </p>
+                    <FormField
+                      control={form.control}
+                      name="appId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-600 text-xs font-medium">
+                            App ID
+                          </FormLabel>
+                          <div className="flex gap-2">
                             <FormControl>
                               <Input
                                 placeholder="Enter your App ID"
                                 {...field}
-                                className="border-gray-200 focus:border-gray-300 focus:ring-gray-200"
+                                className="border-gray-200 focus:border-gray-300 focus:ring-gray-200 font-mono text-sm"
                               />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(field.value)}
+                              className="px-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                              {copied ? (
+                                <Check className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Copy className="h-4 w-4 text-gray-400" />
+                              )}
+                            </button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                      <FormField
-                        control={form.control}
-                        name="redirectUris"
-                        render={() => (
-                          <FormItem>
-                            <FormLabel className="text-gray-700">
-                              Trusted Redirect URIs
-                            </FormLabel>
-                            <div className="space-y-2">
-                              {fields.map((field, index) => {
-                                return (
-                                  <FormField
-                                    key={field.id}
-                                    control={form.control}
-                                    name={`redirectUris.${index}` as const}
-                                    render={({ field }) => (
-                                      <FormItem className="flex items-start gap-2">
-                                        <div className="flex-1">
-                                          <FormControl>
-                                            <Input
-                                              placeholder="https://…"
-                                              {...field}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </div>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => remove(index)}
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
-                                      </FormItem>
-                                    )}
-                                  />
-                                );
-                              })}
+                  {/* Redirect URIs section */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-5">
+                    <h3 className="text-base font-medium text-gray-900 mb-1">
+                      Redirect URIs
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      MTAS will only redirect users to these URLs after login.
+                      Must be exact matches.
+                    </p>
+                    <FormField
+                      control={form.control}
+                      name="redirectUris"
+                      render={() => (
+                        <FormItem>
+                          <div className="space-y-2">
+                            {fields.map((field, index) => (
+                              <FormField
+                                key={field.id}
+                                control={form.control}
+                                name={`redirectUris.${index}` as const}
+                                render={({ field }) => (
+                                  <FormItem className="flex items-start gap-2">
+                                    <div className="flex-1">
+                                      <FormControl>
+                                        <Input
+                                          placeholder="https://your-app.com/callback"
+                                          {...field}
+                                          className="border-gray-200 font-mono text-sm"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => remove(index)}
+                                      className="text-gray-400 hover:text-red-500"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </FormItem>
+                                )}
+                              />
+                            ))}
 
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => append('')}
-                              >
-                                + Add another URI
-                              </Button>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                            <button
+                              type="button"
+                              onClick={() => append('')}
+                              className="w-full py-2.5 rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
+                            >
+                              + Add redirect URI
+                            </button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          type="submit"
-                          className="bg-gray-900 hover:bg-gray-800 text-white"
-                          disabled={updateProfile.isPending}
-                        >
-                          {updateProfile.isPending ? (
-                            <>Saving...</>
-                          ) : (
-                            <>
-                              <Check className="mr-2 h-4 w-4" />
-                              Save Changes
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => form.reset()}
-                          className="border-gray-200 text-gray-700"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      className="bg-gray-900 hover:bg-gray-800 text-white"
+                      disabled={updateProfile.isPending}
+                    >
+                      {updateProfile.isPending ? (
+                        <>Saving...</>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => form.reset()}
+                      className="border-gray-200 text-gray-700"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </div>
           </TabsContent>
 
