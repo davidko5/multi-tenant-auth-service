@@ -8,7 +8,7 @@ MTAS provides OAuth2-inspired auth code exchange for multi-tenant apps. Each reg
 
 ## Architecture
 
-![System Architecture Diagram](apps/mtas-ui/public/mtas-architecture.png)
+![System Architecture Diagram](apps/mtas-ui/public/mtas-diagram.jpg)
 
 **MTAS** consists of two services:
 - **MTAS UI** — Next.js app where users log in and clients manage their settings
