@@ -8,7 +8,17 @@ function normalizePem(pem: string): string {
 
 export function getPublicKey(): string {
   if (process.env.JWT_PUBLIC_KEY) {
-    return normalizePem(process.env.JWT_PUBLIC_KEY);
+    const raw = process.env.JWT_PUBLIC_KEY;
+    console.log(
+      'DEBUG RAW KEY (first 80 chars):',
+      JSON.stringify(raw.slice(0, 80)),
+    );
+    const normalized = normalizePem(raw);
+    console.log(
+      'DEBUG NORMALIZED KEY (first 80 chars):',
+      JSON.stringify(normalized.slice(0, 80)),
+    );
+    return normalized;
   }
   return readFileSync(join(__dirname, '../../../public.pem'), 'utf8');
 }
