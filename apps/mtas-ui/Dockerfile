@@ -31,10 +31,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# With outputFileTracingRoot set to monorepo root,
+# standalone output mirrors the full monorepo path structure
 COPY --from=builder /app/apps/mtas-ui/public ./public
 COPY --from=builder /app/apps/mtas-ui/.next/standalone ./
-COPY --from=builder /app/apps/mtas-ui/.next/static ./.next/static
+COPY --from=builder /app/apps/mtas-ui/.next/static ./apps/mtas-ui/.next/static
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "apps/mtas-ui/server.js"]

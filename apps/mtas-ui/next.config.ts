@@ -1,7 +1,9 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   // TODO(human): Add a rewrites() config that proxies /api/:path* to your backend
   rewrites: async () => {
     return [

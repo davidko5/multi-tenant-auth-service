@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { pem2jwk } from 'pem-jwk';
+import { createPublicKey } from 'crypto';
 
 function getPublicKey(): string {
   if (process.env.JWT_PUBLIC_KEY) {
@@ -19,8 +19,10 @@ export class JwksController {
     const pubPem = getPublicKey();
 
     // Convert to JWK
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const jwk = pem2jwk(pubPem) as Record<string, any>;
+    const jwk = createPublicKey(pubPem).export({ format: 'jwk' }) as Record<
+      string,
+      any
+    >;
 
     jwk.use = 'sig';
     jwk.kid = 'v1';
