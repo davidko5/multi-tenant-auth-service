@@ -14,9 +14,8 @@ import { ClientsModule } from 'src/clients/clients.module';
 import { UserJwtStrategy } from './strategies/user-jwt.strategy';
 import { UserLocalStrategy } from './strategies/user-local.strategy';
 import { ClientJwtStrategy } from './strategies/client-jwt.strategy';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { JwksController } from './controllers/jwks.controller';
+import { getPrivateKey, getPublicKey } from 'src/common/utils/get-jwt-keys';
 @Module({
   imports: [
     UsersModule,
@@ -37,12 +36,8 @@ import { JwksController } from './controllers/jwks.controller';
     {
       provide: 'USER_JWT_SERVICE',
       useFactory: (configService: ConfigService) => {
-        const privateKey =
-          configService.get<string>('JWT_PRIVATE_KEY') ||
-          readFileSync(join(__dirname, '../../private.pem'), 'utf8');
-        const publicKey =
-          configService.get<string>('JWT_PUBLIC_KEY') ||
-          readFileSync(join(__dirname, '../../public.pem'), 'utf8');
+        const privateKey = getPrivateKey();
+        const publicKey = getPublicKey();
         const expiresIn = `${configService.get<number>('JWT_EXPIRATION_TIME')}s`;
 
         return new JwtService({

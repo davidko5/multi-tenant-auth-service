@@ -1,14 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { createPublicKey } from 'crypto';
-
-function getPublicKey(): string {
-  if (process.env.JWT_PUBLIC_KEY) {
-    return process.env.JWT_PUBLIC_KEY;
-  }
-  return readFileSync(join(__dirname, '../../../public.pem'), 'utf8');
-}
+import { getPublicKey } from 'src/common/utils/get-jwt-keys';
 
 @Controller('.well-known')
 export class JwksController {

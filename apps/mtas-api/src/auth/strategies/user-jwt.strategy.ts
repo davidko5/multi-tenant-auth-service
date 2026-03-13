@@ -4,15 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { UsersService } from 'src/users/users.service';
 import { TokenPayload } from '../types/token-payload.interface';
-import { join } from 'path';
-import { readFileSync } from 'fs';
-
-function getPublicKey(): string {
-  if (process.env.JWT_PUBLIC_KEY) {
-    return process.env.JWT_PUBLIC_KEY;
-  }
-  return readFileSync(join(__dirname, '../../../public.pem'), 'utf8');
-}
+import { getPublicKey } from 'src/common/utils/get-jwt-keys';
 
 @Injectable()
 export class UserJwtStrategy extends PassportStrategy(Strategy, 'user-jwt') {
