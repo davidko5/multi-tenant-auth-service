@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // TODO(human): Add a rewrites() config that proxies /api/:path* to your backend
   rewrites: async () => {
     return [

@@ -24,6 +24,9 @@ import { CommonModule } from './common/common.module';
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION_TIME: Joi.string().required(),
         ALLOWED_UI_ORIGINS: Joi.string().required(),
+        NODE_ENV: Joi.string()
+          .valid('development', 'production')
+          .default('development'),
       }),
     }),
     ScheduleModule.forRoot(),
