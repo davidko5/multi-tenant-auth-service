@@ -9,28 +9,28 @@ import {
 
 // Create an axios instance with base URL and default headers
 const api = axios.create({
-  // baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5010',
-  baseURL: "/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5010',
+  // If UI and API are on different domains, use "/api" with Next.js rewrites proxy instead:
+  // baseURL: "/api",
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
-  res => res,                       // pass through successful responses
+  (res) => res, // pass through successful responses
   (err: AxiosError) => {
     const status = err.response?.status;
 
     // if we’re running in the browser *and* the backend says “unauthorized”
     if (typeof window !== 'undefined' && status === 401) {
-
       // Router.replace('/');
       window.location.href = '/';
     }
 
-    return Promise.reject(err);     // let React-Query still see the error
-  }
+    return Promise.reject(err); // let React-Query still see the error
+  },
 );
 
 // User API endpoints

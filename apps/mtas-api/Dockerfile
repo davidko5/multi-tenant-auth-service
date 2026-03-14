@@ -30,4 +30,4 @@ COPY --from=builder /app/apps/mtas-api/dist ./dist
 ENV NODE_ENV=production
 EXPOSE 5010
 
-CMD ["sh", "-c", "node dist/main.js 2>&1; echo \"EXIT CODE: $?\"; sleep 3600"]
+CMD ["node", "dist/main.js"]

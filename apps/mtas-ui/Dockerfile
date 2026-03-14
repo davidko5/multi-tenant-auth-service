@@ -33,7 +33,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # With outputFileTracingRoot set to monorepo root,
 # standalone output mirrors the full monorepo path structure
-COPY --from=builder /app/apps/mtas-ui/public ./public
+COPY --from=builder /app/apps/mtas-ui/public ./apps/mtas-ui/public
 COPY --from=builder /app/apps/mtas-ui/.next/standalone ./
 COPY --from=builder /app/apps/mtas-ui/.next/static ./apps/mtas-ui/.next/static
 
