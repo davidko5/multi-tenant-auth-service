@@ -1,5 +1,4 @@
 {
-  "_comment": "Redirect all Vercel traffic to Coolify deployment. App moved from Vercel to self-hosted Coolify at mtas-ui.kondraten.dev",
   "redirects": [
     {
       "source": "/(.*)",
