@@ -7,20 +7,21 @@ import { PostgresErrorCodes } from 'src/database/postgresErrorCodes.enum';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthCode } from '../auth-code.entity';
+import { AuthCode } from '../entities/auth-code.entity';
 import { LessThan, Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TokenPayload } from '../types/token-payload.interface';
 import { ClientsService } from 'src/clients/clients.service';
+import { RefreshToken } from '../entities/refresh-token.entity';
 
 interface PostgresError extends Error {
   code?: string;
 }
 
-const AUTH_CODE_EXPIRATION = 5 * 60 * 1000;
-
 @Injectable()
 export class UserAuthService {
+  public AUTH_CODE_EXPIRATION: number;
+
   constructor(
     private configService: ConfigService,
     private usersService: UsersService,
@@ -29,7 +30,13 @@ export class UserAuthService {
     private jwtService: JwtService,
     @InjectRepository(AuthCode)
     private readonly authCodesRepository: Repository<AuthCode>,
-  ) {}
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokensRepository: Repository<RefreshToken>,
+  ) {
+    this.AUTH_CODE_EXPIRATION = this.configService.getOrThrow<number>(
+      'AUTH_CODE_EXPIRATION',
+    );
+  }
 
   public async register(dto: UserRegisterRequestDto) {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -83,6 +90,63 @@ export class UserAuthService {
     }
   }
 
+  public async refreshAccessToken({
+    refreshToken,
+    appId,
+  }: {
+    refreshToken: string;
+    appId: string;
+  }) {
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+
+    const storedToken = await this.refreshTokensRepository.findOne({
+      where: { token: hashedToken, appId },
+    });
+
+    // Wrong token or expired - force relogin
+    if (!storedToken || storedToken.expiresAt < new Date()) {
+      // Per RFC 6749 refresh endpoint should return 400 with {"error": "invalid_grant"}
+      // for all failure cases (expired, revoked, invalid)
+      throw new HttpException('invalid_grant', HttpStatus.BAD_REQUEST);
+    } else if (storedToken.isRevoked) {
+      // Just rejecting, no family rewocation dince should be already revoked
+      throw new HttpException('invalid_grant', HttpStatus.BAD_REQUEST);
+    } else if (!storedToken.replacedAt) {
+      // Rotate the old refresh token
+      storedToken.replacedAt = new Date();
+      await this.refreshTokensRepository.save(storedToken);
+
+      const payload: TokenPayload = {
+        id: storedToken.userId,
+        type: 'user',
+        aud: storedToken.appId,
+      };
+      const accessToken = this.jwtService.sign(payload);
+
+      const newRefreshToken = await this.createRefreshToken(
+        storedToken.userId,
+        appId,
+        storedToken.familyId, // Pass family ID to rotate within the same family
+      );
+
+      return { access_token: accessToken, refresh_token: newRefreshToken };
+    }
+    // Replay attack - force re-login and revoke all tokens of the family
+    else if (storedToken.replacedAt) {
+      // We dont delete - just mark as revoked to have some trace in DB and for possible future analytics
+      await this.refreshTokensRepository.update(
+        {
+          familyId: storedToken.familyId,
+        },
+        { isRevoked: true },
+      );
+      throw new HttpException('invalid_grant', HttpStatus.BAD_REQUEST);
+    }
+  }
+
   private async verifyPassword(
     plainTextPassword: string,
     hashedPassword: string,
@@ -111,11 +175,6 @@ export class UserAuthService {
     }
   }
 
-  // TODO: Remove SameSite=None; Secure when UI and API are on the same domain
-  public getCookieForLogOut() {
-    return 'Authentication=; HttpOnly; Path=/; Max-Age=0; SameSite=None; Secure';
-  }
-
   public async createAuthCode(
     userId: number,
     appId: string,
@@ -127,14 +186,14 @@ export class UserAuthService {
       code,
       appId,
       redirectUri,
-      expiresAt: new Date(Date.now() + AUTH_CODE_EXPIRATION), // 5 minutes expiration
+      expiresAt: new Date(Date.now() + this.AUTH_CODE_EXPIRATION), // 5 minutes expiration
     });
 
     await this.authCodesRepository.save(authCode);
     return code;
   }
 
-  public async exchangeAuthCodeForToken({
+  public async exchangeAuthCode({
     authCode,
     appId,
     redirectUri,
@@ -143,6 +202,8 @@ export class UserAuthService {
     appId: string;
     redirectUri: string;
   }) {
+    console.log('Exchanging auth code', { authCode, appId, redirectUri });
+
     const authCodeEntity = await this.authCodesRepository.findOne({
       where: { code: authCode, appId, redirectUri },
     });
@@ -162,10 +223,77 @@ export class UserAuthService {
       redirectUri,
     });
 
-    const payload: TokenPayload = { id: authCodeEntity.userId, type: 'user' };
+    const payload: TokenPayload = {
+      id: authCodeEntity.userId,
+      type: 'user',
+      aud: authCodeEntity.appId,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    const refreshToken = await this.createRefreshToken(
+      authCodeEntity.userId,
+      appId,
+    );
+
+    return { access_token: accessToken, refresh_token: refreshToken };
+  }
+
+  public async createRefreshToken(
+    userId: number,
+    appId: string,
+    // If provided that means we are rotating, if not then it's new family
+    familyId?: string,
+  ) {
+    const token = this.generateRefreshToken();
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const refreshToken = this.refreshTokensRepository.create({
+      token: hashedToken,
+      userId,
+      appId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days expiration
+      familyId: familyId || crypto.randomBytes(20).toString('hex'), // Generate new family ID if not provided
+      isRevoked: false,
+    });
+
+    await this.refreshTokensRepository.save(refreshToken);
+    return token;
+  }
+
+  public async revokeFamily(refreshToken: string) {
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+
+    const storedToken = await this.refreshTokensRepository.findOne({
+      where: { token: hashedToken },
+    });
+
+    if (!storedToken) return;
+
+    await this.refreshTokensRepository.update(
+      { familyId: storedToken.familyId },
+      { isRevoked: true },
+    );
+  }
+
+  // Not removing cause in future can be used with local auth
+  // for user authenticating to their profile at mtas
+  private getCookieWithJwtToken(userId: number, appId: string) {
+    const payload: TokenPayload = { id: userId, type: 'user', aud: appId };
     const token = this.jwtService.sign(payload);
 
-    return { access_token: token };
+    return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}; SameSite=Lax; Secure`;
+  }
+
+  private generateAuthCode(): string {
+    return crypto.randomBytes(20).toString('hex');
+  }
+
+  private generateRefreshToken(): string {
+    // Lives longer than auth code so more entropy - 32 bytes instead of 20
+    return crypto.randomBytes(32).toString('hex');
   }
 
   @Cron(CronExpression.EVERY_12_HOURS)
@@ -176,16 +304,11 @@ export class UserAuthService {
     console.log('Expired auth codes cleaned up');
   }
 
-  // Not removing cause in future can be used with local auth
-  // for user authenticating to their profile at mtas
-  private getCookieWithJwtToken(userId: number) {
-    const payload: TokenPayload = { id: userId, type: 'user' };
-    const token = this.jwtService.sign(payload);
-
-    return `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.configService.get('JWT_EXPIRATION_TIME')}; SameSite=None; Secure`;
-  }
-
-  private generateAuthCode(): string {
-    return crypto.randomBytes(20).toString('hex');
+  @Cron(CronExpression.EVERY_12_HOURS)
+  private async cleanUpExpiredRefreshTokens() {
+    await this.refreshTokensRepository.delete({
+      expiresAt: LessThan(new Date()),
+    });
+    console.log('Expired refresh tokens cleaned up');
   }
 }

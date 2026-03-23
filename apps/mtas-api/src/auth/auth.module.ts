@@ -7,7 +7,7 @@ import { ClientLocalStrategy } from './strategies/client-local.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthCode } from './auth-code.entity';
+import { AuthCode } from './entities/auth-code.entity';
 import { ClientAuthController } from './controllers/client-auth.controller';
 import { ClientAuthService } from './services/client-auth.service';
 import { ClientsModule } from 'src/clients/clients.module';
@@ -16,13 +16,14 @@ import { UserLocalStrategy } from './strategies/user-local.strategy';
 import { ClientJwtStrategy } from './strategies/client-jwt.strategy';
 import { JwksController } from './controllers/jwks.controller';
 import { getPrivateKey, getPublicKey } from 'src/common/utils/get-jwt-keys';
+import { RefreshToken } from './entities/refresh-token.entity';
 @Module({
   imports: [
     UsersModule,
     ClientsModule,
     ConfigModule,
     PassportModule,
-    TypeOrmModule.forFeature([AuthCode]),
+    TypeOrmModule.forFeature([AuthCode, RefreshToken]),
   ],
   controllers: [UserAuthController, ClientAuthController, JwksController],
   providers: [

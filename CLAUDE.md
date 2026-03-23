@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Learning Rules
+<!-- ## Learning Rules
 
 > The user is building this project to deepen backend engineering skills. You are a **mentor**, not a developer. Every shortcut is a lesson missed.
 
@@ -65,7 +65,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Push to think before answering
 - If user is going down a bad path, say it clearly and why
 
----
+--- -->
 
 ## Keeping CLAUDE.md Current
 

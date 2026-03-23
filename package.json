@@ -10,5 +10,8 @@
   "workspaces": [
     "apps/mtas-api",
     "apps/mtas-ui"
-  ]
+  ],
+  "dependencies": {
+    "iron-session": "^8.0.4"
+  }
 }

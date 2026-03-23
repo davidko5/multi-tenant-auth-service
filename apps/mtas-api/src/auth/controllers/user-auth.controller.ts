@@ -8,17 +8,18 @@ import {
   Request,
   Get,
   Req,
-  Res,
+  HttpException,
 } from '@nestjs/common';
 import { UserAuthService } from '../services/user-auth.service';
 import UserRegisterRequestDto from '../dto/user-register-request.dto';
 import { UserLocalAuthenticationGuard } from '../guards/user-local-authentication.guard';
 import { UserJwtAuthenticationGuard } from '../guards/user-jwt-authentication.guard';
-import { Response } from 'express';
 import UserLoginRequestDto from '../dto/user-login-request.dto';
 import UserTokenExchangeRequestDto from '../dto/user-token-exchange-request.dto';
 import RequestWithUser from '../types/request-with-user.interface';
 import UserLoginResponseDto from '../dto/user-login-response.dto';
+import UserTokenRefreshRequestDto from '../dto/user-token-refresh-request.dto';
+import UserRefreshTokenRevokeRequestDto from '../dto/user-refresh-token-revoke-request.dto';
 
 @Controller('user-auth')
 export class UserAuthController {
@@ -47,8 +48,12 @@ export class UserAuthController {
   @HttpCode(200)
   @Post('exchange-token')
   async exchangeToken(@Body() dto: UserTokenExchangeRequestDto) {
-    const token = await this.userAuthService.exchangeAuthCodeForToken(dto);
-    return token;
+    return await this.userAuthService.exchangeAuthCode(dto);
+  }
+
+  @Post('refresh-token')
+  async refreshToken(@Body() dto: UserTokenRefreshRequestDto) {
+    return this.userAuthService.refreshAccessToken(dto);
   }
 
   @UseGuards(UserJwtAuthenticationGuard)
@@ -57,11 +62,10 @@ export class UserAuthController {
     return { ...req.user, password: undefined };
   }
 
-  @UseGuards(UserJwtAuthenticationGuard)
+  // Should be called on logout
   @HttpCode(200)
-  @Post('logout')
-  logOut(@Res() res: Response) {
-    res.setHeader('Set-Cookie', this.userAuthService.getCookieForLogOut());
-    res.send();
+  @Post('revoke')
+  async revoke(@Body() dto: UserRefreshTokenRevokeRequestDto) {
+    await this.userAuthService.revokeFamily(dto.refreshToken);
   }
 }

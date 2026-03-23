@@ -17,7 +17,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         entities: [__dirname + '/../**/*.entity.{js,ts}'],
         migrations: [__dirname + '/../migrations/*.{js,ts}'],
         migrationsRun: true,
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        synchronize: false,
         ssl: configService.get('POSTGRES_SSL') === 'true',
       }),
     }),

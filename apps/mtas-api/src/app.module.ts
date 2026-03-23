@@ -27,6 +27,7 @@ import { CommonModule } from './common/common.module';
         NODE_ENV: Joi.string()
           .valid('development', 'production')
           .default('development'),
+        AUTH_CODE_EXPIRATION: Joi.number().default(5 * 60 * 1000),
       }),
     }),
     ScheduleModule.forRoot(),
