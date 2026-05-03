@@ -15,7 +15,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         password: configService.get('POSTGRES_PASSWORD'),
         database: configService.get('POSTGRES_DB'),
         entities: [__dirname + '/../**/*.entity.{js,ts}'],
-        migrations: [__dirname + '/../migrations/*.{js,ts}'],
+        migrations: [__dirname + '/migrations/*.{js,ts}'],
         migrationsRun: true,
         synchronize: false,
         ssl: configService.get('POSTGRES_SSL') === 'true',
