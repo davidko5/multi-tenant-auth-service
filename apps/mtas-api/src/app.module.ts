@@ -7,9 +7,38 @@ import * as Joi from '@hapi/joi';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ClientsModule } from './clients/clients.module';
 import { CommonModule } from './common/common.module';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? {
+                target: 'pino-pretty',
+                options: { ignore: 'pid,hostname,req,res,responseTime' },
+              }
+            : undefined,
+        redact: {
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            '*.password',
+            '*.access_token',
+            '*.refresh_token',
+            '*.refreshToken',
+            '*.accessToken',
+            '*.token',
+          ],
+          censor: '[REDACTED]',
+        },
+        customSuccessMessage: (req, res, responseTime) =>
+          `${req.method} ${req.url} ${res.statusCode} ${responseTime}ms`,
+        customErrorMessage: (req, res, err) =>
+          `${req.method} ${req.url} ${res.statusCode} ${err.message}`,
+      },
+    }),
     AuthModule,
     UsersModule,
     DatabaseModule,

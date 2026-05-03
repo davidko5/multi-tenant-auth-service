@@ -13,6 +13,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { TokenPayload } from '../types/token-payload.interface';
 import { ClientsService } from 'src/clients/clients.service';
 import { RefreshToken } from '../entities/refresh-token.entity';
+import { PinoLogger } from 'nestjs-pino';
 
 interface PostgresError extends Error {
   code?: string;
@@ -32,7 +33,9 @@ export class UserAuthService {
     private readonly authCodesRepository: Repository<AuthCode>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokensRepository: Repository<RefreshToken>,
+    private readonly logger: PinoLogger,
   ) {
+    this.logger.setContext(UserAuthService.name);
     this.AUTH_CODE_EXPIRATION = this.configService.getOrThrow<number>(
       'AUTH_CODE_EXPIRATION',
     );
@@ -132,6 +135,11 @@ export class UserAuthService {
         storedToken.familyId, // Pass family ID to rotate within the same family
       );
 
+      this.logger.info(
+        { userId: storedToken.userId, appId, familyId: storedToken.familyId },
+        'refresh token rotated',
+      );
+
       return { access_token: accessToken, refresh_token: newRefreshToken };
     }
     // Replay attack - force re-login and revoke all tokens of the family
@@ -142,6 +150,10 @@ export class UserAuthService {
           familyId: storedToken.familyId,
         },
         { isRevoked: true },
+      );
+      this.logger.warn(
+        { userId: storedToken.userId, appId, familyId: storedToken.familyId },
+        'refresh token replay detected, family revoked',
       );
       throw new HttpException('invalid_grant', HttpStatus.BAD_REQUEST);
     }
@@ -190,6 +202,7 @@ export class UserAuthService {
     });
 
     await this.authCodesRepository.save(authCode);
+    this.logger.info({ userId, appId }, 'auth code issued');
     return code;
   }
 
@@ -202,8 +215,6 @@ export class UserAuthService {
     appId: string;
     redirectUri: string;
   }) {
-    console.log('Exchanging auth code', { authCode, appId, redirectUri });
-
     const authCodeEntity = await this.authCodesRepository.findOne({
       where: { code: authCode, appId, redirectUri },
     });
@@ -233,6 +244,11 @@ export class UserAuthService {
     const refreshToken = await this.createRefreshToken(
       authCodeEntity.userId,
       appId,
+    );
+
+    this.logger.info(
+      { userId: authCodeEntity.userId, appId },
+      'token exchanged',
     );
 
     return { access_token: accessToken, refresh_token: refreshToken };
@@ -276,6 +292,14 @@ export class UserAuthService {
       { familyId: storedToken.familyId },
       { isRevoked: true },
     );
+    this.logger.info(
+      {
+        userId: storedToken.userId,
+        appId: storedToken.appId,
+        familyId: storedToken.familyId,
+      },
+      'refresh token family revoked',
+    );
   }
 
   // Not removing cause in future can be used with local auth
@@ -301,7 +325,7 @@ export class UserAuthService {
     await this.authCodesRepository.delete({
       expiresAt: LessThan(new Date()),
     });
-    console.log('Expired auth codes cleaned up');
+    this.logger.info('expired auth codes cleaned up');
   }
 
   @Cron(CronExpression.EVERY_12_HOURS)
@@ -309,6 +333,6 @@ export class UserAuthService {
     await this.refreshTokensRepository.delete({
       expiresAt: LessThan(new Date()),
     });
-    console.log('Expired refresh tokens cleaned up');
+    this.logger.info('expired refresh tokens cleaned up');
   }
 }
