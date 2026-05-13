@@ -11,16 +11,18 @@ MTAS provides OAuth2-inspired auth code exchange for multi-tenant apps. Each reg
 ![System Architecture Diagram](apps/mtas-ui/public/mtas-diagram.jpg)
 
 **MTAS** is two services:
+
 - **MTAS UI** — Next.js app where end users log in and tenants manage their settings
 - **MTAS API** — NestJS backend handling auth logic, token signing, and tenant management
 
 **Your app** integrates as:
+
 - **Client Frontend** — kicks off login by redirecting users to MTAS UI
 - **Client Backend** — exchanges auth codes for tokens, encrypts them into an HttpOnly cookie sent to the browser, and verifies access tokens locally via JWKS
 
 ### Data Model
 
-- **Client** — a registered tenant. Has a unique `appId` (UUID) and a whitelist of `redirectUris`
+- **Client** — a registered tenant. Has a unique `appId` (UUID), a hashed `appSecret`, and a whitelist of `redirectUris`
 - **User** — belongs to exactly one client. Identified by `(email, clientId)` — emails are unique per tenant, not globally
 - **AuthCode** — one-time use, 5 min TTL, ties a login attempt to a specific `appId` and `redirectUri`
 - **RefreshToken** — opaque (SHA-256 hashed in DB), 7-day TTL, tracked by `familyId` for replay detection
@@ -38,7 +40,7 @@ The client backend acts as the OAuth2 confidential party. Tokens are kept out of
 2. **MTAS UI → MTAS API**: `POST /user-auth/login` with credentials, `appId`, `redirectUri`
 3. **MTAS API → MTAS UI**: returns a one-time auth code (5 min TTL)
 4. **MTAS UI → Client Backend**: redirects browser to the registered `redirectUri` (which points at your backend's callback, e.g. `https://api.yourapp.com/auth/callback?auth_code=...`)
-5. **Client Backend → MTAS API**: `POST /user-auth/exchange-token` with `{ authCode, appId, redirectUri }`
+5. **Client Backend → MTAS API**: `POST /user-auth/exchange-token` with `{ authCode, redirectUri }`, authenticated with `Authorization: Basic base64(appId:appSecret)`
 6. **MTAS API → Client Backend**: returns `{ access_token, refresh_token }`
 7. **Client Backend → Browser**: encrypts both tokens into an HttpOnly cookie, redirects browser to the app
 8. **Browser → Client Backend**: every subsequent data request includes the cookie automatically. The backend decrypts it, verifies the access token via cached JWKS, and validates `aud` matches its own `appId` before serving the request
@@ -68,11 +70,11 @@ Body: { "email": "you@example.com", "password": "..." }
 
 Log in to the dashboard to find your `appId` and configure redirect URIs.
 
-### 2. Configure redirect URIs
+### 2. Configure redirect URIs and generate a secret
 
-In the dashboard, register every URL where MTAS is allowed to redirect users back to. MTAS rejects login attempts with unregistered redirect URIs (exact-match validation).
+In the dashboard, register every URL where MTAS is allowed to redirect users back to (exact-match validation). For BFF integration the redirect URI should point at your **backend's callback route**. Also add your **frontend origin** — registered URIs double as the CORS allowlist for the MTAS API.
 
-For BFF integration the redirect URI should point at your **backend's callback route**. Also add your **frontend origin** to this list — registered URIs double as the CORS allowlist for the MTAS API.
+Generate an **app secret** from the dashboard — shown once, used by your backend to authenticate against the token endpoints.
 
 ### 3. Backend: handle the callback
 
@@ -80,7 +82,8 @@ When MTAS redirects with `?auth_code=...`:
 
 ```
 POST /user-auth/exchange-token
-Body: { "authCode": "<code>", "appId": "<your-app-id>", "redirectUri": "<your-callback-url>" }
+Authorization: Basic base64(appId:appSecret)
+Body: { "authCode": "<code>", "redirectUri": "<your-callback-url>" }
 Response: { "access_token": "<jwt>", "refresh_token": "<opaque>" }
 ```
 
@@ -108,7 +111,8 @@ When verification fails with "expired":
 
 ```
 POST /user-auth/refresh-token
-Body: { "refreshToken": "<from-cookie>", "appId": "<your-app-id>" }
+Authorization: Basic base64(appId:appSecret)
+Body: { "refreshToken": "<from-cookie>" }
 Response: { "access_token": "<new-jwt>", "refresh_token": "<new-opaque>" }
 ```
 
@@ -120,6 +124,7 @@ If multiple requests arrive at the moment of expiry, dedupe the refresh call —
 
 ```
 POST /user-auth/revoke
+Authorization: Basic base64(appId:appSecret)
 Body: { "refreshToken": "<from-cookie>" }
 ```
 
@@ -129,37 +134,38 @@ Always returns 200 (RFC 7009). Then clear the cookie. The whole token family is 
 
 ### User Auth
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/user-auth/register` | — | Register a user under a specific `appId` |
-| POST | `/user-auth/login` | — | Login, returns one-time auth code |
-| POST | `/user-auth/exchange-token` | — | Exchange auth code for access + refresh tokens |
-| POST | `/user-auth/refresh-token` | — | Rotate refresh token, get new access + refresh pair |
-| POST | `/user-auth/revoke` | — | Revoke a refresh token family (RFC 7009) |
-| GET | `/user-auth/authenticated-user` | Bearer | Get current user profile |
+| Method | Endpoint                        | Auth   | Description                                         |
+| ------ | ------------------------------- | ------ | --------------------------------------------------- |
+| POST   | `/user-auth/register`           | —      | Register a user under a specific `appId`            |
+| POST   | `/user-auth/login`              | —      | Login, returns one-time auth code                   |
+| POST   | `/user-auth/exchange-token`     | Basic  | Exchange auth code for access + refresh tokens      |
+| POST   | `/user-auth/refresh-token`      | Basic  | Rotate refresh token, get new access + refresh pair |
+| POST   | `/user-auth/revoke`             | Basic  | Revoke a refresh token family (RFC 7009)            |
+| GET    | `/user-auth/authenticated-user` | Bearer | Get current user profile                            |
 
 ### Client Auth (tenant dashboard)
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/client-auth/register` | — | Register a new tenant |
-| POST | `/client-auth/login` | — | Login, sets session cookie |
-| GET | `/client-auth/authenticated-client` | Cookie | Get tenant profile |
-| POST | `/client-auth/logout` | Cookie | Logout |
+| Method | Endpoint                            | Auth   | Description                               |
+| ------ | ----------------------------------- | ------ | ----------------------------------------- |
+| POST   | `/client-auth/register`             | —      | Register a new tenant                     |
+| POST   | `/client-auth/login`                | —      | Login, sets session cookie                |
+| GET    | `/client-auth/authenticated-client` | Cookie | Get tenant profile (returns `hasSecret`)  |
+| POST   | `/client-auth/logout`               | Cookie | Logout                                    |
+| POST   | `/client-auth/rotate-secret`        | Cookie | Generate/rotate app secret, returned once |
 
 ### Management
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/users` | Bearer | List all users for the caller's tenant |
-| PATCH | `/users/:id` | Bearer | Update user name |
-| PATCH | `/clients/:id` | Cookie | Update tenant `appId` or redirect URIs |
+| Method | Endpoint       | Auth   | Description                            |
+| ------ | -------------- | ------ | -------------------------------------- |
+| GET    | `/users`       | Bearer | List all users for the caller's tenant |
+| PATCH  | `/users/:id`   | Bearer | Update user name                       |
+| PATCH  | `/clients/:id` | Cookie | Update tenant `appId` or redirect URIs |
 
 ### Public
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/.well-known/jwks.json` | RSA public key for JWT verification |
+| Method | Endpoint                 | Description                         |
+| ------ | ------------------------ | ----------------------------------- |
+| GET    | `/.well-known/jwks.json` | RSA public key for JWT verification |
 
 ## Architecture Decisions
 
@@ -168,12 +174,12 @@ Always returns 200 (RFC 7009). Then clear the cookie. The whole token family is 
 - **Refresh token rotation with token families.** Every refresh issues a new pair. Reuse of a rotated token = replay = entire family revoked. Aligns with RFC 9700 §4.14.
 - **Soft revoke over hard delete.** Family revocation flips `isRevoked = true` rather than deleting rows, keeping an audit trail of compromised sessions until expiry.
 - **`aud` claim** in user JWTs. Client backends MUST validate it. Without this, a JWT issued for tenant A would pass JWKS verification at tenant B's backend.
+- **Client secrets for confidential clients.** Token endpoints require `Basic base64(appId:appSecret)` — `appId` alone is public (it appears in URLs), so it isn't authentication. Secret is SHA-256 hashed at rest, shown once, rotatable. Required for confidential clients per RFC 6749 §6.
 - **BFF as the recommended integration.** The client backend encrypts tokens into an HttpOnly cookie that only it can decrypt; the browser carries an opaque blob. Refresh and revoke are server-side. Frontend is a dumb cookie carrier.
 
 ## Planned
 
 - **Public client flow (PKCE)** — for SPAs without a backend. Authorization code with PKCE per RFC 9700 §2.1.1.
-- **Client secrets** — for stricter server-to-server authentication on `/exchange-token` and `/refresh-token`.
 
 ## Tech Stack
 

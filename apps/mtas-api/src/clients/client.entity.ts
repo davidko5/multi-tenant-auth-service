@@ -25,6 +25,9 @@ class Client {
   @Column('simple-array')
   redirectUris: string[];
 
+  @Column({ nullable: true, type: 'varchar' })
+  secretHash: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

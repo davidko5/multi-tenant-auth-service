@@ -8,7 +8,6 @@ import {
   Request,
   Get,
   Req,
-  HttpException,
 } from '@nestjs/common';
 import { UserAuthService } from '../services/user-auth.service';
 import UserRegisterRequestDto from '../dto/user-register-request.dto';
@@ -20,6 +19,8 @@ import RequestWithUser from '../types/request-with-user.interface';
 import UserLoginResponseDto from '../dto/user-login-response.dto';
 import UserTokenRefreshRequestDto from '../dto/user-token-refresh-request.dto';
 import UserRefreshTokenRevokeRequestDto from '../dto/user-refresh-token-revoke-request.dto';
+import { ClientBasicAuthenticationGuard } from '../guards/client-basic-authentication.guard';
+import RequestWithClient from '../types/request-with-client.interface';
 
 @Controller('user-auth')
 export class UserAuthController {
@@ -45,15 +46,29 @@ export class UserAuthController {
     return new UserLoginResponseDto(authCode);
   }
 
+  @UseGuards(ClientBasicAuthenticationGuard)
   @HttpCode(200)
   @Post('exchange-token')
-  async exchangeToken(@Body() dto: UserTokenExchangeRequestDto) {
-    return await this.userAuthService.exchangeAuthCode(dto);
+  async exchangeToken(
+    @Req() req: RequestWithClient,
+    @Body() dto: UserTokenExchangeRequestDto,
+  ) {
+    return await this.userAuthService.exchangeAuthCode({
+      ...dto,
+      appId: req.user.appId,
+    });
   }
 
+  @UseGuards(ClientBasicAuthenticationGuard)
   @Post('refresh-token')
-  async refreshToken(@Body() dto: UserTokenRefreshRequestDto) {
-    return this.userAuthService.refreshAccessToken(dto);
+  async refreshToken(
+    @Req() req: RequestWithClient,
+    @Body() dto: UserTokenRefreshRequestDto,
+  ) {
+    return this.userAuthService.refreshAccessToken({
+      ...dto,
+      appId: req.user.appId,
+    });
   }
 
   @UseGuards(UserJwtAuthenticationGuard)
@@ -63,6 +78,7 @@ export class UserAuthController {
   }
 
   // Should be called on logout
+  @UseGuards(ClientBasicAuthenticationGuard)
   @HttpCode(200)
   @Post('revoke')
   async revoke(@Body() dto: UserRefreshTokenRevokeRequestDto) {

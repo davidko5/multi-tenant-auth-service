@@ -7,6 +7,7 @@ import ClientRegisterRequestDto from '../dto/client-register-request.dto';
 import { ClientsService } from 'src/clients/clients.service';
 import { TokenPayload } from '../types/token-payload.interface';
 import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
 
 interface PostgresError extends Error {
   code?: string;
@@ -31,9 +32,14 @@ export class ClientAuthService {
         appId: uuidv4(),
         redirectUris: [],
         createdAt: new Date(),
+        secretHash: null,
         users: [],
       });
-      return { ...createdClient, password: undefined };
+      return {
+        ...createdClient,
+        password: undefined,
+        secretHash: undefined,
+      };
     } catch (error) {
       if (
         (error as PostgresError)?.code === PostgresErrorCodes.UniqueViolation
@@ -81,6 +87,21 @@ export class ClientAuthService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  public async rotateClientSecret(clientId: number) {
+    const newSecret = crypto.randomBytes(32).toString('hex');
+    const newSecretHash = crypto
+      .createHash('sha256')
+      .update(newSecret)
+      .digest('hex');
+
+    await this.clientsService.update({
+      id: clientId,
+      updatedSecretHash: newSecretHash,
+    });
+
+    return { newSecret };
   }
 
   // TODO: Remove SameSite=None; Secure when UI and API are on the same domain

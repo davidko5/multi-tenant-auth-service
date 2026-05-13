@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientApi, userApi } from '@/lib/api';
 import { toast } from 'sonner';
 import {
@@ -20,26 +16,22 @@ import { AxiosResponse } from 'axios';
 
 // User authentication hooks
 export function useUserLogin() {
-  return useMutation<
-    AxiosResponse<UserLoginResponse>,
-    Error,
-    UserLoginRequest
-  >({
-    mutationFn: (credentials: UserLoginRequest) =>
-      userApi.login(credentials),
-    onSuccess: (data) => {
-      return data;
+  return useMutation<AxiosResponse<UserLoginResponse>, Error, UserLoginRequest>(
+    {
+      mutationFn: (credentials: UserLoginRequest) => userApi.login(credentials),
+      onSuccess: (data) => {
+        return data;
+      },
+      onError: () => {
+        toast.error('An error occurred during login');
+      },
     },
-    onError: () => {
-      toast.error('An error occurred during login');
-    },
-  });
+  );
 }
 
 export function useUserRegister() {
   return useMutation({
-    mutationFn: (userData: UserRegisterRequest) =>
-      userApi.register(userData),
+    mutationFn: (userData: UserRegisterRequest) => userApi.register(userData),
     onError: () => {
       toast.error('An error occurred during registration');
     },
@@ -80,6 +72,7 @@ export function useGetAuthenticatedClient(enabled: boolean = true) {
     email: string;
     appId: string;
     redirectUris: string[];
+    hasSecret: boolean;
   }>({
     queryKey: ['clientProfile'],
     queryFn: async () => {
@@ -101,6 +94,19 @@ export function useUpdateClientProfile() {
     },
     onError: () => {
       toast.error('An error occurred while updating your profile');
+    },
+  });
+}
+
+export function useRotateClientSecret() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => clientApi.rotateSecret().then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
+    },
+    onError: () => {
+      toast.error('Failed to rotate secret');
     },
   });
 }

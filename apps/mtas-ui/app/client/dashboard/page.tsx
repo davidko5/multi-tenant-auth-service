@@ -25,7 +25,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   useGetAuthenticatedClient,
+  useRotateClientSecret,
   useUpdateClientProfile,
 } from '@/hooks/use-auth-queries';
 import { Spinner } from '@/components/ui/spiner';
@@ -44,18 +53,27 @@ export default function ClientDashboardPage() {
   const { data: clientData, isLoading: isLoadingProfile } =
     useGetAuthenticatedClient();
   const updateProfile = useUpdateClientProfile();
+  const rotateSecret = useRotateClientSecret();
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
+  const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
+
+  async function handleRotateSecret() {
+    setRotateDialogOpen(false);
+    const { newSecret } = await rotateSecret.mutateAsync();
+    setRevealedSecret(newSecret);
+  }
 
   const copyTimeoutRef = useRef<NodeJS.Timeout>(null);
 
-  function handleCopy(text: string) {
+  function handleCopy(text: string, key: string) {
     navigator.clipboard.writeText(text);
-    setCopied(true);
+    setCopiedKey(key);
     toast.success('Copied to clipboard');
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
-    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+    copyTimeoutRef.current = setTimeout(() => setCopiedKey(null), 2000);
   }
 
   const form = useForm<ClientFormValues>({
@@ -178,10 +196,10 @@ export default function ClientDashboardPage() {
                             </FormControl>
                             <button
                               type="button"
-                              onClick={() => handleCopy(field.value)}
+                              onClick={() => handleCopy(field.value, 'appId')}
                               className="px-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                             >
-                              {copied ? (
+                              {copiedKey === 'appId' ? (
                                 <Check className="h-4 w-4 text-green-500" />
                               ) : (
                                 <Copy className="h-4 w-4 text-gray-400" />
@@ -193,6 +211,128 @@ export default function ClientDashboardPage() {
                       )}
                     />
                   </div>
+
+                  {/* App Secret section */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-5">
+                    <h3 className="text-base font-medium text-gray-900 mb-1">
+                      App Secret
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Used by your backend to authenticate against MTAS token
+                      endpoints. Never expose it in frontend code or commit it
+                      to version control — rotate immediately if it leaks.
+                    </p>
+
+                    {revealedSecret ? (
+                      // State: freshly generated — show plaintext once
+                      <div className="space-y-3">
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                          <p className="text-xs font-medium text-amber-800 mb-2">
+                            Copy this now — it will not be shown again.
+                          </p>
+                          <div className="flex gap-2 items-center">
+                            <code className="flex-1 text-xs text-gray-800 font-mono break-all bg-white border border-amber-200 rounded px-3 py-2">
+                              {revealedSecret}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopy(revealedSecret, 'secret')
+                              }
+                              className="px-3 py-2 rounded-md border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+                            >
+                              {copiedKey === 'secret' ? (
+                                <Check className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <Copy className="h-4 w-4 text-amber-600" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setRevealedSecret(null)}
+                          className="border-gray-200 text-gray-700"
+                        >
+                          I saved it
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-gray-600 text-xs font-medium">
+                            Secret
+                          </label>
+                          <Input
+                            readOnly
+                            value={
+                              clientData?.hasSecret
+                                ? '••••••••••••••••••••••••'
+                                : ''
+                            }
+                            placeholder="No secret generated yet"
+                            className="mt-1 border-gray-200 font-mono text-sm text-gray-500"
+                          />
+                          {!clientData?.hasSecret && (
+                            <p className="text-xs text-gray-400 mt-1.5">
+                              Generate a secret to enable confidential client
+                              authentication.
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => setRotateDialogOpen(true)}
+                          disabled={rotateSecret.isPending}
+                          className="bg-gray-900 hover:bg-gray-800 text-white"
+                        >
+                          {rotateSecret.isPending
+                            ? 'Generating...'
+                            : clientData?.hasSecret
+                              ? 'Rotate Secret'
+                              : 'Generate Secret'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <Dialog
+                    open={rotateDialogOpen}
+                    onOpenChange={setRotateDialogOpen}
+                  >
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {clientData?.hasSecret
+                            ? 'Rotate App Secret'
+                            : 'Generate App Secret'}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {clientData?.hasSecret
+                            ? 'The current secret will be invalidated immediately. Any backend still using it will fail authentication until updated.'
+                            : 'A new secret will be generated. Copy it right away — it is shown only once.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setRotateDialogOpen(false)}
+                          className="border-gray-200 text-gray-700"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleRotateSecret}
+                          className="bg-gray-900 hover:bg-gray-800 text-white"
+                        >
+                          {clientData?.hasSecret ? 'Rotate' : 'Generate'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
                   {/* Redirect URIs section */}
                   <div className="rounded-xl border border-gray-200 bg-white p-5">

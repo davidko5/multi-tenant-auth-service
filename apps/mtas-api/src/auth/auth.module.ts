@@ -17,6 +17,7 @@ import { ClientJwtStrategy } from './strategies/client-jwt.strategy';
 import { JwksController } from './controllers/jwks.controller';
 import { getPrivateKey, getPublicKey } from 'src/common/utils/get-jwt-keys';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { ClientBasicStrategy } from './strategies/client-basic.strategy';
 @Module({
   imports: [
     UsersModule,
@@ -33,6 +34,7 @@ import { RefreshToken } from './entities/refresh-token.entity';
     UserLocalStrategy,
     UserJwtStrategy,
     ClientJwtStrategy,
+    ClientBasicStrategy,
     // user jwt service
     {
       provide: 'USER_JWT_SERVICE',

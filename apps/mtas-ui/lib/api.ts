@@ -60,6 +60,9 @@ export const clientApi = {
     api.patch(`/clients/${clientId}`, data),
 
   clientLogout: () => api.post('/client-auth/logout'),
+
+  rotateSecret: () =>
+    api.post<{ newSecret: string }>('/client-auth/rotate-secret'),
 };
 
 export default api;

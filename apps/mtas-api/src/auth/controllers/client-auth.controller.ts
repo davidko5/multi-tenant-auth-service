@@ -16,6 +16,7 @@ import { ClientLocalAuthenticationGuard } from '../guards/client-local-authentic
 import { ClientJwtAuthenticationGuard } from '../guards/client-jwt-authentication.guard';
 import ClientRegisterRequestDto from '../dto/client-register-request.dto';
 import RequestWithUser from '../types/request-with-user.interface';
+import RequestWithClient from '../types/request-with-client.interface';
 
 @Controller('client-auth')
 export class ClientAuthController {
@@ -39,8 +40,9 @@ export class ClientAuthController {
 
   @UseGuards(ClientJwtAuthenticationGuard)
   @Get('authenticated-client')
-  getProfile(@Request() req: RequestWithUser) {
-    return { ...req.user, password: undefined };
+  getProfile(@Request() req: RequestWithClient) {
+    const { password: _password, secretHash, ...rest } = req.user;
+    return { ...rest, hasSecret: !!secretHash };
   }
 
   @UseGuards(ClientJwtAuthenticationGuard)
@@ -49,5 +51,11 @@ export class ClientAuthController {
   logOut(@Res() res: Response) {
     res.setHeader('Set-Cookie', this.clientAuthService.getCookieForLogOut());
     res.send();
+  }
+
+  @UseGuards(ClientJwtAuthenticationGuard)
+  @Post('rotate-secret')
+  rotateSecret(@Req() req: RequestWithUser) {
+    return this.clientAuthService.rotateClientSecret(req.user.id);
   }
 }

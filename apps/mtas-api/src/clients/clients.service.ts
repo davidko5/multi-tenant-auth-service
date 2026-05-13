@@ -50,12 +50,14 @@ export class ClientsService {
     id: number;
     updatedAppId?: string;
     updatedRedirectUris?: string[];
+    updatedSecretHash?: string | null;
   }): Promise<Client> {
     const client = await this.getById(params.id);
     if (client) {
       const updates = filterUndefined({
         appId: params.updatedAppId,
         redirectUris: params.updatedRedirectUris,
+        secretHash: params.updatedSecretHash,
       });
 
       return this.clientRepository.save({
