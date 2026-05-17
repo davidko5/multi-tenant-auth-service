@@ -3,6 +3,7 @@ import Client from './client.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class OriginServiceService {
@@ -12,7 +13,10 @@ export class OriginServiceService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(OriginServiceService.name);
+  }
 
   async load() {
     const clients = await this.clientRepository.find({
@@ -26,7 +30,7 @@ export class OriginServiceService {
           const origin = new URL(uri).origin;
           newOrigins.add(origin);
         } catch {
-          console.error(`Invalid URI in DB: ${uri}`);
+          this.logger.warn({ uri }, 'invalid redirect URI in DB');
         }
       });
     });
@@ -37,7 +41,7 @@ export class OriginServiceService {
         newOrigins.add(origin.trim());
       });
     this.origins = newOrigins;
-    console.log(this.origins);
+    this.logger.info({ origins: [...newOrigins] }, 'CORS origins loaded');
   }
 
   isAllowed(origin: string) {

@@ -37,6 +37,7 @@ export default function UserRegisterPage() {
   const searchParams = useSearchParams();
   const redirectUri = searchParams.get('redirectUri');
   const appId = searchParams.get('appId');
+  const oauthState = searchParams.get('state');
 
   const userRegister = useUserRegister();
 
@@ -61,7 +62,7 @@ export default function UserRegisterPage() {
         .then(() => {
           if (redirectUri && appId) {
             router.push(
-              `/user/login?redirectUri=${encodeURIComponent(redirectUri)}&appId=${appId}`,
+              `/user/login?redirectUri=${encodeURIComponent(redirectUri)}&appId=${appId}&state=${oauthState}`,
             );
           } else {
             router.push('/user/login');
@@ -207,7 +208,7 @@ export default function UserRegisterPage() {
               <Link
                 href={
                   redirectUri && appId
-                    ? `/user/login?redirectUri=${encodeURIComponent(redirectUri)}&appId=${appId}`
+                    ? `/user/login?redirectUri=${encodeURIComponent(redirectUri)}&appId=${appId}&state=${oauthState}`
                     : '/user/login'
                 }
                 className="text-gray-800 hover:underline"

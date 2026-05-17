@@ -17,8 +17,8 @@ MTAS provides OAuth2-inspired auth code exchange for multi-tenant apps. Each reg
 
 **Your app** integrates as:
 
-- **Client Frontend** — kicks off login by redirecting users to MTAS UI
-- **Client Backend** — exchanges auth codes for tokens, encrypts them into an HttpOnly cookie sent to the browser, and verifies access tokens locally via JWKS
+- **Client Frontend** — kicks off login by navigating to its own backend's `/auth/login`
+- **Client Backend** — owns the login flow: starts it (generating a CSRF `state`), exchanges auth codes for tokens, encrypts them into an HttpOnly cookie sent to the browser, and verifies access tokens locally via JWKS
 
 ### Data Model
 
@@ -36,17 +36,18 @@ MTAS provides OAuth2-inspired auth code exchange for multi-tenant apps. Each reg
 
 The client backend acts as the OAuth2 confidential party. Tokens are kept out of frontend JS — the client backend encrypts them into an HttpOnly cookie that only it can decrypt. The cookie travels with the browser; its contents are opaque to anything but the backend.
 
-1. **Frontend → MTAS UI**: redirect user to `/user/login?appId=...&redirectUri=...`
-2. **MTAS UI → MTAS API**: `POST /user-auth/login` with credentials, `appId`, `redirectUri`
-3. **MTAS API → MTAS UI**: returns a one-time auth code (5 min TTL)
-4. **MTAS UI → Client Backend**: redirects browser to the registered `redirectUri` (which points at your backend's callback, e.g. `https://api.yourapp.com/auth/callback?auth_code=...`)
-5. **Client Backend → MTAS API**: `POST /user-auth/exchange-token` with `{ authCode, redirectUri }`, authenticated with `Authorization: Basic base64(appId:appSecret)`
-6. **MTAS API → Client Backend**: returns `{ access_token, refresh_token }`
-7. **Client Backend → Browser**: encrypts both tokens into an HttpOnly cookie, redirects browser to the app
-8. **Browser → Client Backend**: every subsequent data request includes the cookie automatically. The backend decrypts it, verifies the access token via cached JWKS, and validates `aud` matches its own `appId` before serving the request
-9. **On expiry**: client backend calls `POST /user-auth/refresh-token`, gets a new pair, re-encrypts into the cookie. The browser never sees a token at any step.
+1. **Frontend → Client Backend**: user navigates to the backend's `/auth/login`
+2. **Client Backend → MTAS UI**: generates a random `state`, stores it in a short-lived cookie, redirects to `/user/login?appId=...&redirectUri=...&state=...`
+3. **MTAS UI → MTAS API**: `POST /user-auth/login` with credentials, `appId`, `redirectUri`
+4. **MTAS API → MTAS UI**: returns a one-time auth code (5 min TTL)
+5. **MTAS UI → Client Backend**: redirects browser to the registered `redirectUri` (your backend's callback) with `auth_code` and the `state` echoed back
+6. **Client Backend**: rejects if `state` from the query doesn't match the cookie (login-CSRF defense), then `POST /user-auth/exchange-token` with `{ authCode, redirectUri }`, authenticated with `Authorization: Basic base64(appId:appSecret)`
+7. **MTAS API → Client Backend**: returns `{ access_token, refresh_token }`
+8. **Client Backend → Browser**: encrypts both tokens into an HttpOnly cookie, redirects browser to the app
+9. **Browser → Client Backend**: every subsequent data request includes the cookie automatically. The backend decrypts it, verifies the access token via cached JWKS, and validates `aud` matches its own `appId` before serving the request
+10. **On expiry**: client backend calls `POST /user-auth/refresh-token`, gets a new pair, re-encrypts into the cookie. The browser never sees a token at any step.
 
-JWKS is fetched once and cached — no per-request calls to MTAS once the integration is up.
+`state` is opaque to MTAS — it only echoes the value through. Generating and validating it is the client backend's job. JWKS is fetched once and cached — no per-request calls to MTAS once the integration is up.
 
 ## Token Lifecycle
 
@@ -76,9 +77,13 @@ In the dashboard, register every URL where MTAS is allowed to redirect users bac
 
 Generate an **app secret** from the dashboard — shown once, used by your backend to authenticate against the token endpoints.
 
-### 3. Backend: handle the callback
+### 3. Backend: start the login
 
-When MTAS redirects with `?auth_code=...`:
+Expose an `/auth/login` route. It generates a random `state`, stores it in a short-lived cookie, and redirects the browser to `MTAS_UI/user/login?appId=...&redirectUri=...&state=...`. The frontend's login button points here, not at MTAS directly.
+
+### 4. Backend: handle the callback
+
+MTAS redirects back with `?auth_code=...&state=...`. First reject if `state` doesn't match the cookie, then exchange:
 
 ```
 POST /user-auth/exchange-token
@@ -89,7 +94,7 @@ Response: { "access_token": "<jwt>", "refresh_token": "<opaque>" }
 
 Encrypt both tokens into an HttpOnly, `SameSite=Lax`, `Secure` cookie (e.g. via `iron-session`). Redirect the browser to your app's home.
 
-### 4. Backend: verify access tokens on every request
+### 5. Backend: verify access tokens on every request
 
 Decrypt the cookie, then verify the JWT:
 
@@ -105,7 +110,7 @@ The JWT payload:
 { "id": 42, "type": "user", "aud": "<your-app-id>", "iat": ..., "exp": ... }
 ```
 
-### 5. Backend: refresh on access token expiry
+### 6. Backend: refresh on access token expiry
 
 When verification fails with "expired":
 
@@ -120,7 +125,7 @@ Re-encrypt the new pair into the cookie.
 
 If multiple requests arrive at the moment of expiry, dedupe the refresh call — concurrent requests using the same refresh token will trip replay detection. A simple in-memory promise map keyed by refresh token handles this.
 
-### 6. Logout
+### 7. Logout
 
 ```
 POST /user-auth/revoke
@@ -175,6 +180,7 @@ Always returns 200 (RFC 7009). Then clear the cookie. The whole token family is 
 - **Soft revoke over hard delete.** Family revocation flips `isRevoked = true` rather than deleting rows, keeping an audit trail of compromised sessions until expiry.
 - **`aud` claim** in user JWTs. Client backends MUST validate it. Without this, a JWT issued for tenant A would pass JWKS verification at tenant B's backend.
 - **Client secrets for confidential clients.** Token endpoints require `Basic base64(appId:appSecret)` — `appId` alone is public (it appears in URLs), so it isn't authentication. Secret is SHA-256 hashed at rest, shown once, rotatable. Required for confidential clients per RFC 6749 §6.
+- **`state` for login-CSRF defense.** The client backend owns login initiation: it generates `state`, stores it in a cookie, and verifies it on callback. Stops an attacker from injecting their own auth code into a victim's session. MTAS just echoes `state` — it's the client's CSRF token, validated by whoever issued it.
 - **BFF as the recommended integration.** The client backend encrypts tokens into an HttpOnly cookie that only it can decrypt; the browser carries an opaque blob. Refresh and revoke are server-side. Frontend is a dumb cookie carrier.
 
 ## Planned

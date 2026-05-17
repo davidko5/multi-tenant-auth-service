@@ -27,11 +27,12 @@ const formSchema = z.object({
 
 export default function UserLoginPage() {
   const router = useRouter();
-  
+
   const searchParams = useSearchParams();
   const redirectUri = searchParams.get('redirectUri');
   const appId = searchParams.get('appId');
-  
+  const oauthState = searchParams.get('state');
+
   const userLogin = useUserLogin();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -44,18 +45,22 @@ export default function UserLoginPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await userLogin.mutateAsync({
-        email: values.email,
-        password: values.password,
-        appId: appId || '',
-        redirectUri: redirectUri || '',
-      }).then((res) => {
-        if (redirectUri && appId) {
-          router.push(`${redirectUri}?auth_code=${res.data.authCode}`);
-        } else {
-          router.push('/user/dashboard');
-        }
-      });
+      await userLogin
+        .mutateAsync({
+          email: values.email,
+          password: values.password,
+          appId: appId || '',
+          redirectUri: redirectUri || '',
+        })
+        .then((res) => {
+          if (redirectUri && appId) {
+            router.push(
+              `${redirectUri}?auth_code=${res.data.authCode}&state=${oauthState}`,
+            );
+          } else {
+            router.push('/user/dashboard');
+          }
+        });
       // The redirect will be handled in the auth provider
     } catch (error) {
       console.error('Login failed:', error);
@@ -159,8 +164,8 @@ export default function UserLoginPage() {
               Don&apos;t have an account?{' '}
               <Link
                 href={
-                    redirectUri && appId
-                      ? `/user/register?redirectUri=${encodeURIComponent(redirectUri)}&appId=${appId}`
+                  redirectUri && appId
+                    ? `/user/register?redirectUri=${encodeURIComponent(redirectUri)}&appId=${appId}&state=${oauthState}`
                     : '/user/register'
                 }
                 className="text-gray-800 hover:underline"
